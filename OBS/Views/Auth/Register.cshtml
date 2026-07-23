@@ -1,0 +1,149 @@
+@model OBS.ViewModels.RegisterViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Kayıt Ol";
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kayıt Ol - OBS</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem 0;
+        }
+
+        .auth-card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .auth-card h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .auth-card .subtitle {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .btn-primary {
+            background-color: #2563eb;
+            border-color: #2563eb;
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+            border-color: #1d4ed8;
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 1.25rem;
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+
+        .auth-footer a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2563eb;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-card">
+        <div class="brand">📚 OBS</div>
+        <h1>Kayıt Ol</h1>
+        <p class="subtitle">Yeni hesap oluşturmak için formu doldurunuz.</p>
+
+        <form asp-action="Register" asp-controller="Auth" method="post">
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+            <div class="row mb-3">
+                <div class="col">
+                    <label asp-for="Ad" class="form-label">Ad</label>
+                    <input asp-for="Ad" class="form-control" placeholder="Adınız" />
+                    <span asp-validation-for="Ad" class="text-danger small"></span>
+                </div>
+                <div class="col">
+                    <label asp-for="Soyad" class="form-label">Soyad</label>
+                    <input asp-for="Soyad" class="form-control" placeholder="Soyadınız" />
+                    <span asp-validation-for="Soyad" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Eposta" class="form-label">E-posta</label>
+                <input asp-for="Eposta" class="form-control" placeholder="ornek@mail.com" autocomplete="email" />
+                <span asp-validation-for="Eposta" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Telefon" class="form-label">Telefon</label>
+                <input asp-for="Telefon" class="form-control" placeholder="05xx xxx xx xx" autocomplete="tel" />
+                <span asp-validation-for="Telefon" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Sifre" class="form-label">Şifre</label>
+                <input asp-for="Sifre" class="form-control" placeholder="En az 6 karakter" autocomplete="new-password" />
+                <span asp-validation-for="Sifre" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="SifreOnay" class="form-label">Şifre Onayı</label>
+                <input asp-for="SifreOnay" class="form-control" placeholder="Şifrenizi tekrar giriniz" autocomplete="new-password" />
+                <span asp-validation-for="SifreOnay" class="text-danger small"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Kayıt Ol</button>
+        </form>
+
+        <div class="auth-footer">
+            Zaten hesabınız var mı? <a asp-action="Login" asp-controller="Auth">Giriş Yap</a>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+</body>
+</html>

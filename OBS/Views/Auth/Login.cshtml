@@ -1,0 +1,132 @@
+@model OBS.ViewModels.LoginViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Giriş Yap";
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Giriş Yap - OBS</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .auth-card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .auth-card h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .auth-card .subtitle {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .btn-primary {
+            background-color: #2563eb;
+            border-color: #2563eb;
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+            border-color: #1d4ed8;
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 1.25rem;
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+
+        .auth-footer a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2563eb;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-card">
+        <div class="brand">📚 OBS</div>
+        <h1>Giriş Yap</h1>
+        <p class="subtitle">Sisteme erişmek için giriş yapınız.</p>
+
+        @if (TempData["Basari"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show py-2" role="alert">
+                @TempData["Basari"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <form asp-action="Login" asp-controller="Auth" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+
+            <div asp-validation-summary="All" class="text-danger small mb-3"></div>
+
+            <div class="mb-3">
+                <label asp-for="Eposta" class="form-label">E-posta</label>
+                <input asp-for="Eposta" class="form-control" placeholder="ornek@mail.com" autocomplete="email" />
+                <span asp-validation-for="Eposta" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="Sifre" class="form-label">Şifre</label>
+                <input asp-for="Sifre" class="form-control" placeholder="••••••••" autocomplete="current-password" />
+                <span asp-validation-for="Sifre" class="text-danger small"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Giriş Yap</button>
+        </form>
+
+        <div class="auth-footer">
+            Hesabınız yok mu? <a asp-action="Register" asp-controller="Auth">Kayıt Ol</a>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+</body>
+</html>
