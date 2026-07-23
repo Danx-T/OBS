@@ -18,11 +18,13 @@ public class RegisterViewModel
     public string Eposta { get; set; } = null!;
 
     [Required(ErrorMessage = "Telefon zorunludur.")]
+    [RegularExpression(@"^(\+90|0)?[0-9]{10}$", ErrorMessage = "Geçerli bir telefon numarası giriniz. (Örn: 05321234567)")]
     [MaxLength(20)]
     public string Telefon { get; set; } = null!;
 
     [Required(ErrorMessage = "Şifre zorunludur.")]
-    [MinLength(6, ErrorMessage = "Şifre en az 6 karakter olmalıdır.")]
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,}$",
+        ErrorMessage = "Şifre en az 8 karakter, bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter içermelidir.")]
     [DataType(DataType.Password)]
     public string Sifre { get; set; } = null!;
 
