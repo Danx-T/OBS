@@ -1,0 +1,79 @@
+@model OBS.Models.Organizasyon
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>Edit</h1>
+
+<h4>Organizasyon</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+            <div class="form-group">
+                <label asp-for="UstOrganizasyonId" class="control-label"></label>
+                <input asp-for="UstOrganizasyonId" class="form-control" />
+                <span asp-validation-for="UstOrganizasyonId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Tipi" class="control-label"></label>
+                <input asp-for="Tipi" class="form-control" />
+                <span asp-validation-for="Tipi" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Adi" class="control-label"></label>
+                <input asp-for="Adi" class="form-control" />
+                <span asp-validation-for="Adi" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Kodu" class="control-label"></label>
+                <input asp-for="Kodu" class="form-control" />
+                <span asp-validation-for="Kodu" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Durum" class="control-label"></label>
+                <input asp-for="Durum" class="form-check-input" />
+                <span asp-validation-for="Durum" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Ders" class="control-label"></label>
+                <input asp-for="Ders" class="form-control" />
+                <span asp-validation-for="Ders" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="InverseUstOrganizasyon" class="control-label"></label>
+                <input asp-for="InverseUstOrganizasyon" class="form-control" />
+                <span asp-validation-for="InverseUstOrganizasyon" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Ogrencis" class="control-label"></label>
+                <input asp-for="Ogrencis" class="form-control" />
+                <span asp-validation-for="Ogrencis" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="OgretimUyesis" class="control-label"></label>
+                <input asp-for="OgretimUyesis" class="form-control" />
+                <span asp-validation-for="OgretimUyesis" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="UstOrganizasyon" class="control-label"></label>
+                <input asp-for="UstOrganizasyon" class="form-control" />
+                <span asp-validation-for="UstOrganizasyon" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

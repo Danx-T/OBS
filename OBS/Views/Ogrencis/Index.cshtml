@@ -1,0 +1,113 @@
+@model IEnumerable<OBS.Models.Ogrenci>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.KullaniciId)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Cinsiyet)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.OgrenciNo)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.DanismanId)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.OrganizasyonId)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.GirisTarihi)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.OgrenciTipi)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Durum)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.MezuniyetTarihi)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Sinif)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Danisman)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.DersKaydis)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Kullanici)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Organizasyon)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(model => item.KullaniciId)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.Cinsiyet)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.OgrenciNo)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.DanismanId)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.OrganizasyonId)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.GirisTarihi)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.OgrenciTipi)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.Durum)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.MezuniyetTarihi)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.Sinif)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.Danisman)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.DersKaydis)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.Kullanici)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.Organizasyon)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

@@ -1,0 +1,96 @@
+@model OBS.Models.AcilanDer
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>AcilanDer</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group">
+                <label asp-for="DersId" class="control-label"></label>
+                <input asp-for="DersId" class="form-control" />
+                <span asp-validation-for="DersId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="OgretimUyesiId" class="control-label"></label>
+                <input asp-for="OgretimUyesiId" class="form-control" />
+                <span asp-validation-for="OgretimUyesiId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="DonemId" class="control-label"></label>
+                <input asp-for="DonemId" class="form-control" />
+                <span asp-validation-for="DonemId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="SubeNo" class="control-label"></label>
+                <input asp-for="SubeNo" class="form-control" />
+                <span asp-validation-for="SubeNo" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Kontenjan" class="control-label"></label>
+                <input asp-for="Kontenjan" class="form-control" />
+                <span asp-validation-for="Kontenjan" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Durum" class="control-label"></label>
+                <input asp-for="Durum" class="form-control" />
+                <span asp-validation-for="Durum" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Ders" class="control-label"></label>
+                <input asp-for="Ders" class="form-control" />
+                <span asp-validation-for="Ders" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="DersKaydis" class="control-label"></label>
+                <input asp-for="DersKaydis" class="form-control" />
+                <span asp-validation-for="DersKaydis" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="DersProgramis" class="control-label"></label>
+                <input asp-for="DersProgramis" class="form-control" />
+                <span asp-validation-for="DersProgramis" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Donem" class="control-label"></label>
+                <input asp-for="Donem" class="form-control" />
+                <span asp-validation-for="Donem" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="OgretimUyesi" class="control-label"></label>
+                <input asp-for="OgretimUyesi" class="form-control" />
+                <span asp-validation-for="OgretimUyesi" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="SinavProgramis" class="control-label"></label>
+                <input asp-for="SinavProgramis" class="form-control" />
+                <span asp-validation-for="SinavProgramis" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>

@@ -1,0 +1,114 @@
+@model OBS.Models.Kullanici
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>Kullanici</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group">
+                <label asp-for="Ad" class="control-label"></label>
+                <input asp-for="Ad" class="form-control" />
+                <span asp-validation-for="Ad" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Soyad" class="control-label"></label>
+                <input asp-for="Soyad" class="form-control" />
+                <span asp-validation-for="Soyad" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Eposta" class="control-label"></label>
+                <input asp-for="Eposta" class="form-control" />
+                <span asp-validation-for="Eposta" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Telefon" class="control-label"></label>
+                <input asp-for="Telefon" class="form-control" />
+                <span asp-validation-for="Telefon" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="SifreHash" class="control-label"></label>
+                <input asp-for="SifreHash" class="form-control" />
+                <span asp-validation-for="SifreHash" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="IkiFaktorluDogrulama" class="control-label"></label>
+                <input asp-for="IkiFaktorluDogrulama" class="form-check-input" />
+                <span asp-validation-for="IkiFaktorluDogrulama" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="AktiflikDurumu" class="control-label"></label>
+                <input asp-for="AktiflikDurumu" class="form-check-input" />
+                <span asp-validation-for="AktiflikDurumu" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="OlusturmaTarihi" class="control-label"></label>
+                <input asp-for="OlusturmaTarihi" class="form-control" />
+                <span asp-validation-for="OlusturmaTarihi" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="SonGuncellenmeTarihi" class="control-label"></label>
+                <input asp-for="SonGuncellenmeTarihi" class="form-control" />
+                <span asp-validation-for="SonGuncellenmeTarihi" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="DenetimKaydis" class="control-label"></label>
+                <input asp-for="DenetimKaydis" class="form-control" />
+                <span asp-validation-for="DenetimKaydis" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="KullaniciRols" class="control-label"></label>
+                <input asp-for="KullaniciRols" class="form-control" />
+                <span asp-validation-for="KullaniciRols" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="KullaniciYetkiIslemYapanKullanicis" class="control-label"></label>
+                <input asp-for="KullaniciYetkiIslemYapanKullanicis" class="form-control" />
+                <span asp-validation-for="KullaniciYetkiIslemYapanKullanicis" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="KullaniciYetkiKullanicis" class="control-label"></label>
+                <input asp-for="KullaniciYetkiKullanicis" class="form-control" />
+                <span asp-validation-for="KullaniciYetkiKullanicis" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Ogrenci" class="control-label"></label>
+                <input asp-for="Ogrenci" class="form-control" />
+                <span asp-validation-for="Ogrenci" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="OgretimUyesi" class="control-label"></label>
+                <input asp-for="OgretimUyesi" class="form-control" />
+                <span asp-validation-for="OgretimUyesi" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>

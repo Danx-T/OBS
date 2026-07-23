@@ -1,0 +1,48 @@
+@model OBS.Models.Notlar
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>Notlar</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group">
+                <label asp-for="DersKaydiId" class="control-label"></label>
+                <input asp-for="DersKaydiId" class="form-control" />
+                <span asp-validation-for="DersKaydiId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="OlcmeTuru" class="control-label"></label>
+                <input asp-for="OlcmeTuru" class="form-control" />
+                <span asp-validation-for="OlcmeTuru" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Puan" class="control-label"></label>
+                <input asp-for="Puan" class="form-control" />
+                <span asp-validation-for="Puan" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="DersKaydi" class="control-label"></label>
+                <input asp-for="DersKaydi" class="form-control" />
+                <span asp-validation-for="DersKaydi" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>

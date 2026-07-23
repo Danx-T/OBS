@@ -1,0 +1,28 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Publish
+publish/
+**/publish/
+
+# Logs
+logs/
+*.log
+
+# Secrets & environment
+appsettings.Development.json
+secrets.json
+
+# NuGet
+*.nupkg
+.nuget/
+
+# OS
+.DS_Store
+Thumbs.db

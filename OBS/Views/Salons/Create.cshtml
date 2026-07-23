@@ -1,0 +1,72 @@
+@model OBS.Models.Salon
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>Salon</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group">
+                <label asp-for="BinaId" class="control-label"></label>
+                <input asp-for="BinaId" class="form-control" />
+                <span asp-validation-for="BinaId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="SalonTipi" class="control-label"></label>
+                <input asp-for="SalonTipi" class="form-control" />
+                <span asp-validation-for="SalonTipi" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="SalonAdi" class="control-label"></label>
+                <input asp-for="SalonAdi" class="form-control" />
+                <span asp-validation-for="SalonAdi" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Kapasite" class="control-label"></label>
+                <input asp-for="Kapasite" class="form-control" />
+                <span asp-validation-for="Kapasite" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Bina" class="control-label"></label>
+                <input asp-for="Bina" class="form-control" />
+                <span asp-validation-for="Bina" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="DersProgramis" class="control-label"></label>
+                <input asp-for="DersProgramis" class="form-control" />
+                <span asp-validation-for="DersProgramis" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="InverseBina" class="control-label"></label>
+                <input asp-for="InverseBina" class="form-control" />
+                <span asp-validation-for="InverseBina" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="SinavProgramis" class="control-label"></label>
+                <input asp-for="SinavProgramis" class="form-control" />
+                <span asp-validation-for="SinavProgramis" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>

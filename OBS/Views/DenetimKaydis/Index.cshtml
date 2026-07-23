@@ -1,0 +1,89 @@
+@model IEnumerable<OBS.Models.DenetimKaydi>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.KullaniciId)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.IslemTuru)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.EtkilenenTablo)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.EtkilenenKayitId)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.EtkilenenSutun)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.EskiDeger)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.YeniDeger)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.IslemZamani)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.IpAdresi)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Kullanici)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(model => item.KullaniciId)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.IslemTuru)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.EtkilenenTablo)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.EtkilenenKayitId)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.EtkilenenSutun)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.EskiDeger)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.YeniDeger)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.IslemZamani)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.IpAdresi)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.Kullanici)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

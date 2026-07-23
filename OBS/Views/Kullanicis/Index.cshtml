@@ -1,0 +1,119 @@
+@model IEnumerable<OBS.Models.Kullanici>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Ad)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Soyad)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Eposta)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Telefon)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SifreHash)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.IkiFaktorluDogrulama)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.AktiflikDurumu)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.OlusturmaTarihi)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SonGuncellenmeTarihi)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.DenetimKaydis)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.KullaniciRols)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.KullaniciYetkiIslemYapanKullanicis)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.KullaniciYetkiKullanicis)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Ogrenci)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.OgretimUyesi)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(model => item.Ad)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.Soyad)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.Eposta)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.Telefon)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.SifreHash)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.IkiFaktorluDogrulama)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.AktiflikDurumu)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.OlusturmaTarihi)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.SonGuncellenmeTarihi)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.DenetimKaydis)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.KullaniciRols)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.KullaniciYetkiIslemYapanKullanicis)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.KullaniciYetkiKullanicis)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.Ogrenci)
+            </td>
+            <td>
+                @Html.DisplayFor(model => item.OgretimUyesi)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

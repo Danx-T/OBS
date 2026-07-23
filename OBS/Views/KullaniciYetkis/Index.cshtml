@@ -1,0 +1,53 @@
+@model IEnumerable<OBS.Models.KullaniciYetki>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.BitisTarihi)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.IslemYapanKullanici)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Kullanici)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Yetki)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.BitisTarihi)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.IslemYapanKullanici.Id)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Kullanici.Id)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Yetki.Id)
+            </td>
+            <td>
+                @Html.ActionLink("Edit", "Edit", new { kullaniciId = item.KullaniciId, yetkiId = item.YetkiId, baslangicTarihi = item.BaslangicTarihi }) |
+                @Html.ActionLink("Details", "Details", new { kullaniciId = item.KullaniciId, yetkiId = item.YetkiId, baslangicTarihi = item.BaslangicTarihi }) |
+                @Html.ActionLink("Delete", "Delete", new { kullaniciId = item.KullaniciId, yetkiId = item.YetkiId, baslangicTarihi = item.BaslangicTarihi })
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
