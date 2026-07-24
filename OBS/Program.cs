@@ -17,6 +17,7 @@ builder.Services.AddMemoryCache();
 // Uygulama servisleri
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddSingleton<ITwoFactorService, TwoFactorService>();
+builder.Services.AddSingleton<IPasswordResetService, PasswordResetService>();
 
 // Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
