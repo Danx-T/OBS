@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using OBS.Models;
+using OBS.Services;
 using OBS.ViewModels;
 using System.Security.Claims;
 
@@ -10,10 +11,14 @@ namespace OBS.Controllers;
 public class AuthController : Controller
 {
     private readonly ObsContext _context;
+    private readonly IEmailService _emailService;
+    private readonly ITwoFactorService _twoFactorService;
 
-    public AuthController(ObsContext context)
+    public AuthController(ObsContext context, IEmailService emailService, ITwoFactorService twoFactorService)
     {
         _context = context;
+        _emailService = emailService;
+        _twoFactorService = twoFactorService;
     }
 
     // GET: /Auth/Login
@@ -50,17 +55,89 @@ public class AuthController : Controller
             return View(model);
         }
 
-        var claims = new List<Claim>
+        // 2FA aktif mi?
+        if (kullanici.IkiFaktorluDogrulama)
         {
-            new Claim(ClaimTypes.NameIdentifier, kullanici.Id.ToString()),
-            new Claim(ClaimTypes.Name, $"{kullanici.Ad} {kullanici.Soyad}"),
-            new Claim(ClaimTypes.Email, kullanici.Eposta)
-        };
+            // Kod üret ve mail gönder
+            var code = _twoFactorService.GenerateCode(kullanici.Id);
+            var body = Build2FAEmailBody($"{kullanici.Ad} {kullanici.Soyad}", code);
 
-        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var principal = new ClaimsPrincipal(identity);
+            try
+            {
+                await _emailService.SendAsync(kullanici.Eposta, $"{kullanici.Ad} {kullanici.Soyad}",
+                    "OBS - Giriş Doğrulama Kodunuz", body);
+            }
+            catch (Exception)
+            {
+                ModelState.AddModelError(string.Empty, "Doğrulama kodu gönderilemedi. Lütfen daha sonra tekrar deneyiniz.");
+                return View(model);
+            }
 
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+            // Doğrulama ekranına yönlendir
+            return RedirectToAction(nameof(Verify2FA), new { kullaniciId = kullanici.Id, returnUrl });
+        }
+
+        // 2FA kapalı → direkt oturum aç
+        await SignInUserAsync(kullanici);
+
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            return Redirect(returnUrl);
+
+        return RedirectToAction("Index", "Home");
+    }
+
+    // GET: /Auth/Verify2FA
+    [HttpGet]
+    public IActionResult Verify2FA(int kullaniciId, string? returnUrl = null)
+    {
+        if (kullaniciId <= 0)
+            return RedirectToAction(nameof(Login));
+
+        var kullanici = _context.Kullanicis.Find(kullaniciId);
+        if (kullanici == null)
+            return RedirectToAction(nameof(Login));
+
+        // E-postanın tamamını gösterme; sadece ilk 3 harf + *** + domain
+        var eposta = kullanici.Eposta;
+        var atIndex = eposta.IndexOf('@');
+        var masked = atIndex > 3
+            ? eposta[..3] + new string('*', atIndex - 3) + eposta[atIndex..]
+            : eposta[..1] + "***" + eposta[atIndex..];
+
+        ViewBag.MaskedEmail = masked;
+        ViewBag.ReturnUrl   = returnUrl;
+
+        return View(new VerifyViewModel { KullaniciId = kullaniciId });
+    }
+
+    // POST: /Auth/Verify2FA
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Verify2FA(VerifyViewModel model, string? returnUrl = null)
+    {
+        if (!ModelState.IsValid)
+            return View(model);
+
+        var kullanici = _context.Kullanicis.Find(model.KullaniciId);
+        if (kullanici == null)
+            return RedirectToAction(nameof(Login));
+
+        if (!_twoFactorService.ValidateCode(model.KullaniciId, model.Kod))
+        {
+            ModelState.AddModelError(nameof(model.Kod), "Kod hatalı veya süresi dolmuş. Lütfen tekrar giriş yapınız.");
+            
+            // Maskeli e-postayı tekrar ayarla
+            var eposta  = kullanici.Eposta;
+            var atIndex = eposta.IndexOf('@');
+            ViewBag.MaskedEmail = atIndex > 3
+                ? eposta[..3] + new string('*', atIndex - 3) + eposta[atIndex..]
+                : eposta[..1] + "***" + eposta[atIndex..];
+            ViewBag.ReturnUrl = returnUrl;
+
+            return View(model);
+        }
+
+        await SignInUserAsync(kullanici);
 
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             return Redirect(returnUrl);
@@ -119,5 +196,52 @@ public class AuthController : Controller
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return RedirectToAction(nameof(Login));
+    }
+
+    // ── Yardımcı metotlar ────────────────────────────────────────────────────
+
+    private async Task SignInUserAsync(Kullanici kullanici)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, kullanici.Id.ToString()),
+            new Claim(ClaimTypes.Name, $"{kullanici.Ad} {kullanici.Soyad}"),
+            new Claim(ClaimTypes.Email, kullanici.Eposta)
+        };
+
+        var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var principal = new ClaimsPrincipal(identity);
+
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+    }
+
+    private static string Build2FAEmailBody(string adSoyad, string code)
+    {
+        return $"""
+        <!DOCTYPE html>
+        <html lang="tr">
+        <head><meta charset="utf-8"></head>
+        <body style="font-family: Arial, sans-serif; background:#f0f2f5; margin:0; padding:20px;">
+          <div style="max-width:480px; margin:0 auto; background:#fff; border-radius:10px; padding:32px; box-shadow:0 2px 16px rgba(0,0,0,.1);">
+            <div style="text-align:center; margin-bottom:24px;">
+              <span style="font-size:2rem;">📚</span>
+              <h2 style="margin:8px 0 0; color:#2563eb; font-size:1.3rem;">OBS Sistemi</h2>
+            </div>
+            <p style="margin-bottom:8px;">Merhaba <strong>{adSoyad}</strong>,</p>
+            <p style="color:#555; margin-bottom:24px;">
+              Giriş doğrulama kodunuz aşağıdadır. Kod <strong>5 dakika</strong> geçerlidir.
+            </p>
+            <div style="background:#f0f4ff; border:2px dashed #2563eb; border-radius:8px; text-align:center; padding:20px 0; margin-bottom:24px;">
+              <span style="font-size:2.5rem; font-weight:700; letter-spacing:0.35em; color:#2563eb;">{code}</span>
+            </div>
+            <p style="color:#888; font-size:0.85rem;">
+              Bu kodu siz talep etmediyseniz lütfen bu e-postayı dikkate almayın ve şifrenizi değiştirin.
+            </p>
+            <hr style="border:none; border-top:1px solid #eee; margin:24px 0;">
+            <p style="color:#aaa; font-size:0.75rem; text-align:center;">© OBS Sistemi — Otomatik gönderilmiştir, lütfen yanıtlamayın.</p>
+          </div>
+        </body>
+        </html>
+        """;
     }
 }

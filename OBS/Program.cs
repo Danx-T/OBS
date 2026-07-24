@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using OBS.Models;
+using OBS.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +10,13 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.AddDbContext<ObsContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("OBSConnection")));
+
+// In-memory cache (2FA kodları için)
+builder.Services.AddMemoryCache();
+
+// Uygulama servisleri
+builder.Services.AddTransient<IEmailService, EmailService>();
+builder.Services.AddSingleton<ITwoFactorService, TwoFactorService>();
 
 // Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
