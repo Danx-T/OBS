@@ -1,0 +1,231 @@
+@model OBS.ViewModels.VerifyViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "E-posta Doğrulama";
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>E-posta Doğrulama - OBS</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .auth-card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2563eb;
+            letter-spacing: 0.05em;
+        }
+
+        .auth-card h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .auth-card .subtitle {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .btn-primary {
+            background-color: #2563eb;
+            border-color: #2563eb;
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+            border-color: #1d4ed8;
+        }
+
+        /* Kod giriş alanı */
+        .code-input {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            border: 2px solid #2563eb;
+            border-radius: 8px;
+            padding: 0.75rem 0.5rem;
+            color: #2563eb;
+        }
+
+        .code-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+            border-color: #1d4ed8;
+        }
+
+        .code-input::placeholder {
+            color: #93c5fd;
+            letter-spacing: 0.25em;
+        }
+
+        /* Timer */
+        .timer-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #eff6ff;
+            color: #2563eb;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+
+        .timer-badge.expired {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 1.25rem;
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+
+        .auth-footer a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Envelope animasyonu */
+        .envelope-icon {
+            display: block;
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            animation: bounce 1.2s ease infinite;
+        }
+
+        @@keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-6px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-card">
+        <div class="brand">📚 OBS</div>
+
+        <span class="envelope-icon">✉️</span>
+
+        <h1>E-posta Doğrulama</h1>
+        <p class="subtitle">
+            <strong>@ViewBag.MaskedEmail</strong> adresine gönderilen
+            6 haneli kodu giriniz.
+        </p>
+
+        <div class="text-center">
+            <span class="timer-badge" id="timerBadge">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z"/>
+                    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0"/>
+                </svg>
+                <span id="timerText">05:00</span> kalan süre
+            </span>
+        </div>
+
+        <form asp-action="Verify2FA" asp-controller="Auth" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="KullaniciId" />
+            <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+
+            <div class="mb-4">
+                <label asp-for="Kod" class="form-label">Doğrulama Kodu</label>
+                <input asp-for="Kod"
+                       id="kodInput"
+                       class="form-control code-input"
+                       placeholder="- - - - - -"
+                       maxlength="6"
+                       autocomplete="one-time-code"
+                       autofocus />
+                <span asp-validation-for="Kod" class="text-danger small"></span>
+            </div>
+
+            <div asp-validation-summary="All" class="text-danger small mb-3"></div>
+
+            <button type="submit" id="submitBtn" class="btn btn-primary w-100">
+                Doğrula
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            Kod gelmedi mi veya süre doldu mu?
+            <a asp-action="Login" asp-controller="Auth">Tekrar giriş yapın</a>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        // Kodu otomatik büyük harfe çevir
+        const kodInput = document.getElementById('kodInput');
+        kodInput.addEventListener('input', function () {
+            this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        });
+
+        // 5 dakika geri sayım sayacı
+        let seconds = 5 * 60;
+        const timerText  = document.getElementById('timerText');
+        const timerBadge = document.getElementById('timerBadge');
+        const submitBtn  = document.getElementById('submitBtn');
+
+        function updateTimer() {
+            if (seconds <= 0) {
+                timerText.textContent = '00:00';
+                timerBadge.classList.add('expired');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Süre Doldu';
+                kodInput.disabled = true;
+                return;
+            }
+            const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+            const s = String(seconds % 60).padStart(2, '0');
+            timerText.textContent = `${m}:${s}`;
+            seconds--;
+            setTimeout(updateTimer, 1000);
+        }
+        updateTimer();
+    </script>
+</body>
+</html>
