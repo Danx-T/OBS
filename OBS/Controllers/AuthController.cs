@@ -13,12 +13,15 @@ public class AuthController : Controller
     private readonly ObsContext _context;
     private readonly IEmailService _emailService;
     private readonly ITwoFactorService _twoFactorService;
+    private readonly IPasswordResetService _passwordResetService;
 
-    public AuthController(ObsContext context, IEmailService emailService, ITwoFactorService twoFactorService)
+    public AuthController(ObsContext context, IEmailService emailService,
+        ITwoFactorService twoFactorService, IPasswordResetService passwordResetService)
     {
         _context = context;
         _emailService = emailService;
         _twoFactorService = twoFactorService;
+        _passwordResetService = passwordResetService;
     }
 
     // GET: /Auth/Login
@@ -198,6 +201,91 @@ public class AuthController : Controller
         return RedirectToAction(nameof(Login));
     }
 
+    // GET: /Auth/ForgotPassword
+    [HttpGet]
+    public IActionResult ForgotPassword()
+    {
+        return View();
+    }
+
+    // POST: /Auth/ForgotPassword
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+    {
+        if (!ModelState.IsValid)
+            return View(model);
+
+        // Kullanıcı var mı? — güvenlik için her iki durumda da başarı mesajı göster
+        var kullanici = _context.Kullanicis.FirstOrDefault(k => k.Eposta == model.Eposta);
+        if (kullanici != null && kullanici.AktiflikDurumu)
+        {
+            var token   = _passwordResetService.GenerateToken(kullanici.Id);
+            var resetUrl = Url.Action(nameof(ResetPassword), "Auth",
+                new { token }, Request.Scheme)!;
+
+            var body = BuildResetEmailBody($"{kullanici.Ad} {kullanici.Soyad}", resetUrl);
+
+            try
+            {
+                await _emailService.SendAsync(kullanici.Eposta,
+                    $"{kullanici.Ad} {kullanici.Soyad}",
+                    "OBS - Şifre Sıfırlama", body);
+            }
+            catch (Exception)
+            {
+                ModelState.AddModelError(string.Empty, "Mail gönderilemedi. Lütfen daha sonra tekrar deneyiniz.");
+                return View(model);
+            }
+        }
+
+        // Her iki durumda da aynı mesaj (kullanıcı tespitini engeller)
+        TempData["Basari"] = "Eğer bu e-posta sistemde kayıtlıysa, şifre sıfırlama linki gönderildi.";
+        return RedirectToAction(nameof(ForgotPassword));
+    }
+
+    // GET: /Auth/ResetPassword?token=xxx
+    [HttpGet]
+    public IActionResult ResetPassword(string? token)
+    {
+        if (string.IsNullOrWhiteSpace(token) || _passwordResetService.GetKullaniciId(token) == null)
+        {
+            TempData["Hata"] = "Şifre sıfırlama linki geçersiz veya süresi dolmuş.";
+            return RedirectToAction(nameof(Login));
+        }
+
+        return View(new ResetPasswordViewModel { Token = token });
+    }
+
+    // POST: /Auth/ResetPassword
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+    {
+        if (!ModelState.IsValid)
+            return View(model);
+
+        var kullaniciId = _passwordResetService.GetKullaniciId(model.Token);
+        if (kullaniciId == null)
+        {
+            ModelState.AddModelError(string.Empty, "Link geçersiz veya süresi dolmuş. Lütfen tekrar şifre sıfırlama isteği gönderin.");
+            return View(model);
+        }
+
+        var kullanici = _context.Kullanicis.Find(kullaniciId.Value);
+        if (kullanici == null)
+            return RedirectToAction(nameof(Login));
+
+        kullanici.SifreHash = BCrypt.Net.BCrypt.HashPassword(model.YeniSifre);
+        kullanici.SonGuncellenmeTarihi = DateTime.Now;
+        await _context.SaveChangesAsync();
+
+        _passwordResetService.InvalidateToken(model.Token);
+
+        TempData["Basari"] = "Şifreniz başarıyla güncellendi. Giriş yapabilirsiniz.";
+        return RedirectToAction(nameof(Login));
+    }
+
     // ── Yardımcı metotlar ────────────────────────────────────────────────────
 
     private async Task SignInUserAsync(Kullanici kullanici)
@@ -236,6 +324,39 @@ public class AuthController : Controller
             </div>
             <p style="color:#888; font-size:0.85rem;">
               Bu kodu siz talep etmediyseniz lütfen bu e-postayı dikkate almayın ve şifrenizi değiştirin.
+            </p>
+            <hr style="border:none; border-top:1px solid #eee; margin:24px 0;">
+            <p style="color:#aaa; font-size:0.75rem; text-align:center;">© OBS Sistemi — Otomatik gönderilmiştir, lütfen yanıtlamayın.</p>
+          </div>
+        </body>
+        </html>
+        """;
+    }
+
+    private static string BuildResetEmailBody(string adSoyad, string resetUrl)
+    {
+        return $"""
+        <!DOCTYPE html>
+        <html lang="tr">
+        <head><meta charset="utf-8"></head>
+        <body style="font-family: Arial, sans-serif; background:#f0f2f5; margin:0; padding:20px;">
+          <div style="max-width:480px; margin:0 auto; background:#fff; border-radius:10px; padding:32px; box-shadow:0 2px 16px rgba(0,0,0,.1);">
+            <div style="text-align:center; margin-bottom:24px;">
+              <span style="font-size:2rem;">📚</span>
+              <h2 style="margin:8px 0 0; color:#2563eb; font-size:1.3rem;">OBS Sistemi</h2>
+            </div>
+            <p style="margin-bottom:8px;">Merhaba <strong>{adSoyad}</strong>,</p>
+            <p style="color:#555; margin-bottom:24px;">
+              Şifre sıfırlama talebiniz alındı. Aşağıdaki butona tıklayarak yeni şifrenizi belirleyebilirsiniz.<br>
+              Link <strong>15 dakika</strong> geçerlidir.
+            </p>
+            <div style="text-align:center; margin-bottom:24px;">
+              <a href="{resetUrl}" style="display:inline-block; background:#2563eb; color:#fff; text-decoration:none; padding:12px 32px; border-radius:8px; font-weight:600; font-size:1rem;">
+                Şifremi Sıfırla
+              </a>
+            </div>
+            <p style="color:#888; font-size:0.85rem;">
+              Bu talebi siz yapmadıysanız lütfen bu e-postayı dikkate almayın.
             </p>
             <hr style="border:none; border-top:1px solid #eee; margin:24px 0;">
             <p style="color:#aaa; font-size:0.75rem; text-align:center;">© OBS Sistemi — Otomatik gönderilmiştir, lütfen yanıtlamayın.</p>
