@@ -18,7 +18,7 @@ public class RegisterViewModel
     public string Eposta { get; set; } = null!;
 
     [Required(ErrorMessage = "Telefon zorunludur.")]
-    [RegularExpression(@"^(\+90|0)?[0-9]{10}$", ErrorMessage = "Geçerli bir telefon numarası giriniz. (Örn: 05321234567)")]
+    [RegularExpression(@"^(\+90|0)[0-9]{10}$", ErrorMessage = "Geçerli bir telefon numarası giriniz. (Örn: 05321234567)")]
     [MaxLength(20)]
     public string Telefon { get; set; } = null!;
 
