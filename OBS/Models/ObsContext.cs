@@ -234,7 +234,7 @@ public partial class ObsContext : DbContext
             entity.Property(e => e.Ad)
                 .HasMaxLength(100)
                 .IsUnicode(false);
-            entity.Property(e => e.AktiflikDurumu).HasDefaultValue(true);
+            entity.Property(e => e.AktiflikDurumu).HasDefaultValue(false);
             entity.Property(e => e.Eposta)
                 .HasMaxLength(50)
                 .IsUnicode(false);
