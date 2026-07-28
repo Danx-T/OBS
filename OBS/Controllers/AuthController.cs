@@ -157,50 +157,6 @@ public class AuthController : Controller
         return RedirectToAction("Index", "Home");
     }
 
-    // GET: /Auth/Register
-    [HttpGet]
-    public IActionResult Register()
-    {
-        if (User.Identity?.IsAuthenticated == true)
-            return RedirectToAction("Index", "Home");
-
-        return View();
-    }
-
-    // POST: /Auth/Register
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Register(RegisterViewModel model)
-    {
-        if (!ModelState.IsValid)
-            return View(model);
-
-        // E-posta benzersizlik kontrolü
-        if (_context.Kullanicis.Any(k => k.Eposta == model.Eposta))
-        {
-            ModelState.AddModelError("Eposta", "Bu e-posta adresi zaten kayıtlı.");
-            return View(model);
-        }
-
-        var kullanici = new Kullanici
-        {
-            Ad = model.Ad,
-            Soyad = model.Soyad,
-            Eposta = model.Eposta,
-            Telefon = model.Telefon,
-            SifreHash = BCrypt.Net.BCrypt.HashPassword(model.Sifre),
-            AktiflikDurumu = false,
-            IkiFaktorluDogrulama = false,
-            OlusturmaTarihi = DateTime.Now
-        };
-
-        _context.Kullanicis.Add(kullanici);
-        await _context.SaveChangesAsync();
-
-        TempData["Basari"] = "Kayıt başarılı! Hesabınız admin onayından sonra aktif edilecektir.";
-        return RedirectToAction(nameof(Login));
-    }
-
     // POST: /Auth/Logout
     [HttpPost]
     [ValidateAntiForgeryToken]
