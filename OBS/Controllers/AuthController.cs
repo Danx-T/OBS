@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OBS.Models;
 using OBS.Services;
 using OBS.ViewModels;
@@ -85,6 +86,14 @@ public class AuthController : Controller
 
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             return Redirect(returnUrl);
+
+        // Admin ise onay ekranına yönlendir
+        var isAdmin = await _context.KullaniciRols
+            .Include(kr => kr.Rol)
+            .AnyAsync(kr => kr.KullaniciId == kullanici.Id && kr.AktiflikDurumu && kr.Rol.RolAdi == "Admin");
+
+        if (isAdmin)
+            return RedirectToAction("BekleyenKullanicilar", "Admin");
 
         return RedirectToAction("Index", "Home");
     }
@@ -180,7 +189,7 @@ public class AuthController : Controller
             Eposta = model.Eposta,
             Telefon = model.Telefon,
             SifreHash = BCrypt.Net.BCrypt.HashPassword(model.Sifre),
-            AktiflikDurumu = true,
+            AktiflikDurumu = false,
             IkiFaktorluDogrulama = false,
             OlusturmaTarihi = DateTime.Now
         };
@@ -188,7 +197,7 @@ public class AuthController : Controller
         _context.Kullanicis.Add(kullanici);
         await _context.SaveChangesAsync();
 
-        TempData["Basari"] = "Kayıt başarılı! Giriş yapabilirsiniz.";
+        TempData["Basari"] = "Kayıt başarılı! Hesabınız admin onayından sonra aktif edilecektir.";
         return RedirectToAction(nameof(Login));
     }
 
@@ -290,12 +299,24 @@ public class AuthController : Controller
 
     private async Task SignInUserAsync(Kullanici kullanici)
     {
+        // Kullanıcının rollerini yükle
+        var roller = await _context.KullaniciRols
+            .Include(kr => kr.Rol)
+            .Where(kr => kr.KullaniciId == kullanici.Id && kr.AktiflikDurumu)
+            .ToListAsync();
+
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, kullanici.Id.ToString()),
             new Claim(ClaimTypes.Name, $"{kullanici.Ad} {kullanici.Soyad}"),
             new Claim(ClaimTypes.Email, kullanici.Eposta)
         };
+
+        // Rolleri claim olarak ekle
+        foreach (var kr in roller)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, kr.Rol.RolAdi));
+        }
 
         var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);

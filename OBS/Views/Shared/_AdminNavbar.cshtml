@@ -1,0 +1,141 @@
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
+
+@if ((await AuthorizationService.AuthorizeAsync(User, null, new Microsoft.AspNetCore.Authorization.Infrastructure.RolesAuthorizationRequirement(new[] { "Admin" }))).Succeeded)
+{
+    <nav id="admin-navbar">
+        <div class="admin-nav-inner">
+            <div class="admin-nav-brand">
+                <span class="admin-nav-icon">🛡️</span>
+                <span class="admin-nav-title">Admin Panel</span>
+            </div>
+            <ul class="admin-nav-links">
+                <li>
+                    <a asp-controller="Admin" asp-action="BekleyenKullanicilar"
+                       class="admin-nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "BekleyenKullanicilar" ? "active" : "")">
+                        <span>👤</span> Onay Bekleyenler
+                    </a>
+                </li>
+            </ul>
+            <div class="admin-nav-user">
+                <span class="admin-nav-username">@User.Identity!.Name</span>
+                <form asp-action="Logout" asp-controller="Auth" method="post" style="display:inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="admin-nav-logout">Çıkış</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <style>
+        #admin-navbar {
+            background: linear-gradient(90deg, #0f172a 0%, #1e3a5f 100%);
+            box-shadow: 0 2px 16px rgba(0,0,0,0.25);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+        }
+
+        .admin-nav-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            height: 56px;
+            gap: 24px;
+        }
+
+        .admin-nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .admin-nav-icon {
+            font-size: 1.2rem;
+        }
+
+        .admin-nav-title {
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+        }
+
+        .admin-nav-links {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .admin-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: background 0.15s ease, color 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .admin-nav-link:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .admin-nav-link.active {
+            background: rgba(37,99,235,0.6);
+            color: #fff;
+        }
+
+        .admin-nav-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        .admin-nav-username {
+            color: rgba(255,255,255,0.6);
+            font-size: 0.8rem;
+            white-space: nowrap;
+            max-width: 160px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .admin-nav-logout {
+            background: rgba(239,68,68,0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 7px;
+            padding: 5px 14px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+
+        .admin-nav-logout:hover {
+            background: rgba(239,68,68,0.4);
+            color: #fff;
+        }
+
+        @@media (max-width: 640px) {
+            .admin-nav-username { display: none; }
+            .admin-nav-title { display: none; }
+        }
+    </style>
+}
