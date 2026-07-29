@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace OBS.Models;
@@ -13,7 +13,7 @@ public partial class Ogrenci
 
     public string OgrenciNo { get; set; } = null!;
 
-    public int DanismanId { get; set; }
+    public int? DanismanId { get; set; }
 
     public int OrganizasyonId { get; set; }
 
@@ -27,7 +27,7 @@ public partial class Ogrenci
 
     public int Sinif { get; set; }
 
-    public virtual OgretimUyesi Danisman { get; set; } = null!;
+    public virtual OgretimUyesi? Danisman { get; set; }
 
     public virtual ICollection<DersKaydi> DersKaydis { get; set; } = new List<DersKaydi>();
 

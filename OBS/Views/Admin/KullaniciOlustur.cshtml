@@ -6,68 +6,84 @@
 <style>
     :root {
         --primary: #2563eb;
-        --bg: #f1f5f9;
+        --primary-dark: #1d4ed8;
+        --bg: #f8fafc;
         --card: #ffffff;
         --text: #0f172a;
         --muted: #64748b;
         --border: #e2e8f0;
-        --shadow: 0 4px 24px rgba(0,0,0,0.08);
+        --shadow: 0 10px 30px rgba(0,0,0,0.06);
         --success: #16a34a;
     }
 
-    body { background: var(--bg); font-family: 'Inter','Segoe UI',sans-serif; color: var(--text); }
+    body { background: var(--bg); font-family: 'Inter', 'Segoe UI', sans-serif; color: var(--text); }
 
     .page-wrap {
-        max-width: 560px;
-        margin: 40px auto;
-        padding: 0 20px;
+        max-width: 800px;
+        margin: 36px auto;
+        padding: 0 20px 60px;
     }
 
     .page-header {
         display: flex;
         align-items: center;
-        gap: 14px;
+        gap: 16px;
         margin-bottom: 28px;
     }
 
     .page-header .icon {
-        width: 50px; height: 50px;
+        width: 54px; height: 54px;
         background: linear-gradient(135deg, var(--primary), #7c3aed);
-        border-radius: 14px;
+        border-radius: 16px;
         display: flex; align-items: center; justify-content: center;
-        font-size: 1.4rem;
+        font-size: 1.6rem;
         box-shadow: 0 4px 14px rgba(37,99,235,0.3);
         flex-shrink: 0;
+        color: #fff;
     }
 
-    .page-header h1 { font-size: 1.5rem; font-weight: 700; margin: 0; }
-    .page-header p  { margin: 2px 0 0; color: var(--muted); font-size: 0.875rem; }
+    .page-header h1 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+    .page-header p  { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
 
     .card {
         background: var(--card);
-        border-radius: 16px;
-        padding: 28px 32px;
+        border-radius: 20px;
+        padding: 32px 36px;
         box-shadow: var(--shadow);
         border: 1px solid var(--border);
     }
 
     .alert-success-custom {
         background: #f0fdf4; border: 1px solid #bbf7d0; color: var(--success);
-        border-radius: 10px; padding: 12px 16px; margin-bottom: 20px;
-        font-weight: 500; display: flex; align-items: center; gap: 8px;
+        border-radius: 12px; padding: 14px 18px; margin-bottom: 24px;
+        font-weight: 500; display: flex; align-items: center; gap: 10px;
     }
 
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .section-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 28px 0 16px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+    }
 
-    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .section-title:first-of-type { margin-top: 0; }
 
-    label { font-size: 0.8rem; font-weight: 600; color: var(--text); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 16px; }
+    .form-row.single { grid-template-columns: 1fr; }
 
-    .form-control {
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+    label { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+
+    .form-control, .form-select {
         border: 1.5px solid var(--border);
-        border-radius: 9px;
-        padding: 10px 12px;
-        font-size: 0.875rem;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 0.88rem;
         color: var(--text);
         background: #fff;
         transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -75,7 +91,7 @@
         box-sizing: border-box;
     }
 
-    .form-control:focus {
+    .form-control:focus, .form-select:focus {
         border-color: var(--primary);
         box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
         outline: none;
@@ -83,27 +99,69 @@
 
     .text-danger { color: #dc2626; font-size: 0.75rem; margin-top: 2px; }
 
+    /* Rol / Tip Seçim Kartları */
+    .tip-group {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+
+    .tip-card input[type="radio"] { display: none; }
+
+    .tip-card label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 16px 10px;
+        border: 2px solid var(--border);
+        border-radius: 14px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: var(--muted);
+        transition: all 0.2s ease;
+        text-align: center;
+        background: #fff;
+    }
+
+    .tip-card label .tip-icon { font-size: 1.8rem; }
+
+    .tip-card input[type="radio"]:checked + label {
+        border-color: var(--primary);
+        background: #eff6ff;
+        color: var(--primary);
+        box-shadow: 0 4px 12px rgba(37,99,235,0.1);
+    }
+
+    /* Dinamik alanlar */
+    #ogrenci-alanlari, #ogretim-uyesi-alanlari, #ortak-alanlar { display: none; }
+    #ogrenci-alanlari.show, #ogretim-uyesi-alanlari.show, #ortak-alanlar.show { display: block; }
+
     .btn-submit {
         background: linear-gradient(135deg, var(--primary), #7c3aed);
         color: white;
         border: none;
-        padding: 12px 28px;
-        border-radius: 10px;
+        padding: 14px 28px;
+        border-radius: 12px;
         font-weight: 700;
-        font-size: 0.9rem;
+        font-size: 0.95rem;
         cursor: pointer;
         transition: opacity 0.15s ease, transform 0.1s ease;
         width: 100%;
-        margin-top: 8px;
+        margin-top: 20px;
+        box-shadow: 0 4px 14px rgba(37,99,235,0.25);
     }
 
-    .btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-submit:hover { opacity: 0.92; transform: translateY(-1px); }
 
-    .validation-summary { font-size: 0.8rem; margin-bottom: 16px; }
+    .validation-summary { font-size: 0.82rem; margin-bottom: 16px; }
 
-    @@media (max-width: 520px) {
+    @@media (max-width: 600px) {
         .form-row { grid-template-columns: 1fr; }
-        .card { padding: 20px 16px; }
+        .tip-group { grid-template-columns: 1fr; }
+        .card { padding: 22px 18px; }
     }
 </style>
 
@@ -112,7 +170,7 @@
         <div class="icon">➕</div>
         <div>
             <h1>Kullanıcı Oluştur</h1>
-            <p>Sisteme yeni kullanıcı ekle</p>
+            <p>Sisteme yeni kullanıcı veya öğrenci/öğretim üyesi ekle</p>
         </div>
     </div>
 
@@ -126,37 +184,249 @@
             @Html.AntiForgeryToken()
             <div asp-validation-summary="All" class="text-danger validation-summary"></div>
 
+            <!-- Kullanıcı Rolü / Tipi -->
+            <div class="section-title">KULLANICI ROLÜ (İsteğe Bağlı)</div>
+            <div class="tip-group">
+                <div class="tip-card">
+                    <input type="radio" name="KullaniciTipi" id="tip-hicbiri" value="" @(string.IsNullOrEmpty(Model.KullaniciTipi) ? "checked" : "") />
+                    <label for="tip-hicbiri">
+                        <span class="tip-icon">👤</span>
+                        Sadece Kullanıcı
+                        <small style="font-size: 0.7rem; font-weight: normal; color: #94a3b8;">Personel / Diğer</small>
+                    </label>
+                </div>
+                <div class="tip-card">
+                    <input type="radio" name="KullaniciTipi" id="tip-ogrenci" value="Ogrenci" @(Model.KullaniciTipi == "Ogrenci" ? "checked" : "") />
+                    <label for="tip-ogrenci">
+                        <span class="tip-icon">🎓</span>
+                        Öğrenci
+                        <small style="font-size: 0.7rem; font-weight: normal; color: #94a3b8;">Ögrenci ekle</small>
+                    </label>
+                </div>
+                <div class="tip-card">
+                    <input type="radio" name="KullaniciTipi" id="tip-ogretim" value="OgretimUyesi" @(Model.KullaniciTipi == "OgretimUyesi" ? "checked" : "") />
+                    <label for="tip-ogretim">
+                        <span class="tip-icon">👨‍🏫</span>
+                        Öğretim Üyesi
+                        <small style="font-size: 0.7rem; font-weight: normal; color: #94a3b8;">Akademik kadro</small>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Temel Kullanıcı Bilgileri -->
+            <div class="section-title">TEMEL KULLANICI BİLGİLERİ</div>
             <div class="form-row">
                 <div class="form-group">
-                    <label asp-for="Ad">Ad</label>
+                    <label asp-for="Ad">Ad <span style="color:#ef4444">*</span></label>
                     <input asp-for="Ad" class="form-control" placeholder="Ahmet" autocomplete="off" />
                     <span asp-validation-for="Ad" class="text-danger"></span>
                 </div>
                 <div class="form-group">
-                    <label asp-for="Soyad">Soyad</label>
+                    <label asp-for="Soyad">Soyad <span style="color:#ef4444">*</span></label>
                     <input asp-for="Soyad" class="form-control" placeholder="Yılmaz" autocomplete="off" />
                     <span asp-validation-for="Soyad" class="text-danger"></span>
                 </div>
             </div>
-
             <div class="form-row">
                 <div class="form-group">
-                    <label asp-for="Eposta">E-posta</label>
+                    <label asp-for="Eposta">E-posta <span style="color:#ef4444">*</span></label>
                     <input asp-for="Eposta" class="form-control" placeholder="ahmet@universite.edu.tr" autocomplete="off" />
                     <span asp-validation-for="Eposta" class="text-danger"></span>
                 </div>
                 <div class="form-group">
-                    <label asp-for="Telefon">Telefon</label>
+                    <label asp-for="Telefon">Telefon <span style="color:#ef4444">*</span></label>
                     <input asp-for="Telefon" class="form-control" placeholder="05321234567" autocomplete="off" />
                     <span asp-validation-for="Telefon" class="text-danger"></span>
                 </div>
             </div>
 
-            <button type="submit" class="btn-submit">✅ Kullanıcıyı Oluştur</button>
+            <!-- ── Ortak Alanlar (Öğrenci veya Öğretim Üyesi seçildiğinde görünür) ── -->
+            <div id="ortak-alanlar">
+                <div class="section-title">KURUMSAL & KİŞİSEL BİLGİLER</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label asp-for="Cinsiyet">Cinsiyet <span style="color:#ef4444">*</span></label>
+                        <select asp-for="Cinsiyet" class="form-select">
+                            <option value="">Seçiniz</option>
+                            <option value="Kadin">Kadın</option>
+                            <option value="Erkek">Erkek</option>
+                        </select>
+                        <span asp-validation-for="Cinsiyet" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="FakulteSecim">Fakülte / Enstitü <span style="color:#ef4444">*</span></label>
+                        <select id="FakulteSecim" class="form-select" asp-items="ViewBag.Fakulteler">
+                            <option value="">Fakülte Seçiniz</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row single">
+                    <div class="form-group">
+                        <label asp-for="OrganizasyonId">Bölüm / Program <span style="color:#ef4444">*</span></label>
+                        <select asp-for="OrganizasyonId" class="form-select" id="BolumSecim" disabled>
+                            <option value="">Önce Fakülte Seçiniz</option>
+                        </select>
+                        <span asp-validation-for="OrganizasyonId" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Öğrenci Alanları ── -->
+            <div id="ogrenci-alanlari">
+                <div class="section-title">ÖĞRENCİ KAYIT BİLGİLERİ</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label asp-for="OgrenciNo">Öğrenci No <span style="color:#ef4444">*</span></label>
+                        <input asp-for="OgrenciNo" class="form-control" placeholder="Örn: 2024010001" autocomplete="off" />
+                        <span asp-validation-for="OgrenciNo" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Sinif">Sınıf <span style="color:#ef4444">*</span></label>
+                        <select asp-for="Sinif" class="form-select">
+                            <option value="">Seçiniz</option>
+                            <option value="1">1. Sınıf</option>
+                            <option value="2">2. Sınıf</option>
+                            <option value="3">3. Sınıf</option>
+                            <option value="4">4. Sınıf</option>
+                        </select>
+                        <span asp-validation-for="Sinif" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label asp-for="OgrenciTipi">Öğrenci Tipi <span style="color:#ef4444">*</span></label>
+                        <select asp-for="OgrenciTipi" class="form-select">
+                            <option value="">Seçiniz</option>
+                            <option value="Normal">Normal</option>
+                            <option value="Yatay Gecis">Yatay Geçiş</option>
+                            <option value="Uluslararasi">Uluslararası</option>
+                        </select>
+                        <span asp-validation-for="OgrenciTipi" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="OgrenciDurum">Durum <span style="color:#ef4444">*</span></label>
+                        <select asp-for="OgrenciDurum" class="form-select">
+                            <option value="Aktif">Aktif</option>
+                            <option value="Mezun">Mezun</option>
+                            <option value="Kayit Dondurmus">Kayıt Dondurmuş</option>
+                            <option value="Ilisigi Kesilmis">İlişiği Kesilmiş</option>
+                        </select>
+                        <span asp-validation-for="OgrenciDurum" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="form-row single">
+                    <div class="form-group">
+                        <label asp-for="GirisTarihi">Giriş Tarihi <span style="color:#ef4444">*</span></label>
+                        <input asp-for="GirisTarihi" type="date" class="form-control" />
+                        <span asp-validation-for="GirisTarihi" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Öğretim Üyesi Alanları ── -->
+            <div id="ogretim-uyesi-alanlari">
+                <div class="section-title">ÖĞRETİM ÜYESİ BİLGİLERİ</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label asp-for="Unvan">Unvan</label>
+                        <select asp-for="Unvan" class="form-select">
+                            <option value="">Seçiniz</option>
+                            <option value="Ogr. Gor.">Öğr. Gör.</option>
+                            <option value="Dr. Ogr. Uyesi">Dr. Öğr. Üyesi</option>
+                            <option value="Doc. Dr.">Doç. Dr.</option>
+                            <option value="Prof. Dr.">Prof. Dr.</option>
+                        </select>
+                        <span asp-validation-for="Unvan" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="KadroTipi">Kadro Tipi</label>
+                        <select asp-for="KadroTipi" class="form-select">
+                            <option value="">Seçiniz</option>
+                            <option value="Kadrolu">Kadrolu</option>
+                            <option value="Sozlesmeli">Sözleşmeli</option>
+                            <option value="Yari Zamanli">Yarı Zamanlı</option>
+                            <option value="Misafir Ogretim Uyesi">Misafir Öğretim Üyesi</option>
+                        </select>
+                        <span asp-validation-for="KadroTipi" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label asp-for="GorevBaslangic">Görev Başlangıç Tarihi <span style="color:#ef4444">*</span></label>
+                        <input asp-for="GorevBaslangic" type="date" class="form-control" />
+                        <span asp-validation-for="GorevBaslangic" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="GorevBitis">Görev Bitiş Tarihi (Opsiyonel)</label>
+                        <input asp-for="GorevBitis" type="date" class="form-control" />
+                        <span asp-validation-for="GorevBitis" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit">✅ Kullanıcıyı Kaydet</button>
         </form>
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        const radioButtons = document.querySelectorAll('input[name="KullaniciTipi"]');
+        const ortakDiv     = document.getElementById('ortak-alanlar');
+        const ogrenciDiv   = document.getElementById('ogrenci-alanlari');
+        const ogretimDiv   = document.getElementById('ogretim-uyesi-alanlari');
+
+        function updateAlanlari() {
+            const selected = document.querySelector('input[name="KullaniciTipi"]:checked')?.value;
+            ortakDiv.classList.toggle('show', selected === 'Ogrenci' || selected === 'OgretimUyesi');
+            ogrenciDiv.classList.toggle('show', selected === 'Ogrenci');
+            ogretimDiv.classList.toggle('show', selected === 'OgretimUyesi');
+        }
+
+        radioButtons.forEach(r => r.addEventListener('change', updateAlanlari));
+        updateAlanlari();
+
+        // ── Fakülte & Bölüm Cascading Dropdown ──────────────────────
+        const bolumlerData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.BolumlerListesi ?? new object[]{}));
+        const fakulteSelect = document.getElementById('FakulteSecim');
+        const bolumSelect = document.getElementById('BolumSecim');
+
+        fakulteSelect.addEventListener('change', function() {
+            const selectedFakulteId = parseInt(this.value);
+            bolumSelect.innerHTML = '<option value="">Bölüm Seçiniz</option>';
+
+            if (!this.value) {
+                bolumSelect.disabled = true;
+                bolumSelect.innerHTML = '<option value="">Önce Fakülte Seçiniz</option>';
+                return;
+            }
+
+            const filtrelenmis = bolumlerData.filter(b => b.UstOrganizasyonId === selectedFakulteId || b.UstOrganizasyonId === Number(this.value));
+
+            if (filtrelenmis.length > 0) {
+                bolumSelect.disabled = false;
+                filtrelenmis.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b.Id;
+                    opt.textContent = b.Adi;
+                    bolumSelect.appendChild(opt);
+                });
+            } else {
+                bolumSelect.disabled = true;
+                bolumSelect.innerHTML = '<option value="">Bu fakülteye ait bölüm bulunamadı</option>';
+            }
+        });
+
+        // Sayfa yüklendiğinde mevcut seçili bölüm varsa fakülte ve bölümü yükle
+        const currentBolumId = '@(Model?.OrganizasyonId ?? 0)';
+        if (currentBolumId && Number(currentBolumId) > 0 && bolumlerData.length > 0) {
+            const seciliBolum = bolumlerData.find(b => b.Id === Number(currentBolumId));
+            if (seciliBolum) {
+                fakulteSelect.value = seciliBolum.UstOrganizasyonId;
+                fakulteSelect.dispatchEvent(new Event('change'));
+                bolumSelect.value = seciliBolum.Id;
+            }
+        }
+    </script>
 }

@@ -334,6 +334,8 @@ public partial class ObsContext : DbContext
                 .HasMaxLength(20)
                 .IsUnicode(false);
 
+            entity.Property(e => e.DanismanId).IsRequired(false);
+
             entity.HasOne(d => d.Danisman).WithMany(p => p.Ogrencis)
                 .HasForeignKey(d => d.DanismanId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
