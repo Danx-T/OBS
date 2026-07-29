@@ -47,7 +47,20 @@ public class AuthController : Controller
         var kullanici = _context.Kullanicis
             .FirstOrDefault(k => k.Eposta == model.Eposta);
 
-        if (kullanici == null || !BCrypt.Net.BCrypt.Verify(model.Sifre, kullanici.SifreHash))
+        if (kullanici == null)
+        {
+            ModelState.AddModelError(string.Empty, "E-posta veya şifre hatalı.");
+            return View(model);
+        }
+
+        // Şifresi henüz oluşturulmamış (admin tarafından eklendi, ilk giriş bekleniyor)
+        if (kullanici.SifreHash == null)
+        {
+            ModelState.AddModelError(string.Empty, "Henüz şifreniz oluşturulmamış. Lütfen e-postanızı kontrol ediniz.");
+            return View(model);
+        }
+
+        if (!BCrypt.Net.BCrypt.Verify(model.Sifre, kullanici.SifreHash))
         {
             ModelState.AddModelError(string.Empty, "E-posta veya şifre hatalı.");
             return View(model);
@@ -93,7 +106,7 @@ public class AuthController : Controller
             .AnyAsync(kr => kr.KullaniciId == kullanici.Id && kr.AktiflikDurumu && kr.Rol.RolAdi == "Admin");
 
         if (isAdmin)
-            return RedirectToAction("BekleyenKullanicilar", "Admin");
+            return RedirectToAction("KullaniciOlustur", "Admin");
 
         return RedirectToAction("Index", "Home");
     }

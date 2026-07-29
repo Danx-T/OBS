@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OBS.Models;
+using OBS.ViewModels;
 
 namespace OBS.Controllers;
 
@@ -15,53 +16,44 @@ public class AdminController : Controller
         _context = context;
     }
 
-    // GET: /Admin/BekleyenKullanicilar
-    public async Task<IActionResult> BekleyenKullanicilar()
+    // GET: /Admin/KullaniciOlustur
+    [HttpGet]
+    public IActionResult KullaniciOlustur()
     {
-        var bekleyenler = await _context.Kullanicis
-            .Where(k => !k.AktiflikDurumu)
-            .OrderBy(k => k.OlusturmaTarihi)
-            .ToListAsync();
-
-        return View(bekleyenler);
+        return View(new KullaniciOlusturViewModel());
     }
 
-    // POST: /Admin/KullaniciOnayla/{id}
+    // POST: /Admin/KullaniciOlustur
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> KullaniciOnayla(int id)
+    public async Task<IActionResult> KullaniciOlustur(KullaniciOlusturViewModel model)
     {
-        var kullanici = await _context.Kullanicis.FindAsync(id);
-        if (kullanici == null)
+        if (!ModelState.IsValid)
+            return View(model);
+
+        // E-posta benzersizlik kontrolü
+        if (await _context.Kullanicis.AnyAsync(k => k.Eposta == model.Eposta))
         {
-            TempData["Hata"] = "Kullanıcı bulunamadı.";
-            return RedirectToAction(nameof(BekleyenKullanicilar));
+            ModelState.AddModelError("Eposta", "Bu e-posta adresi zaten kayıtlı.");
+            return View(model);
         }
 
-        kullanici.AktiflikDurumu = true;
-        kullanici.SonGuncellenmeTarihi = DateTime.Now;
-        await _context.SaveChangesAsync();
-
-        TempData["Basari"] = $"{kullanici.Ad} {kullanici.Soyad} adlı kullanıcı onaylandı.";
-        return RedirectToAction(nameof(BekleyenKullanicilar));
-    }
-
-    // POST: /Admin/KullaniciReddet/{id}
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> KullaniciReddet(int id)
-    {
-        var kullanici = await _context.Kullanicis.FindAsync(id);
-        if (kullanici == null)
+        var kullanici = new Kullanici
         {
-            TempData["Hata"] = "Kullanıcı bulunamadı.";
-            return RedirectToAction(nameof(BekleyenKullanicilar));
-        }
+            Ad                   = model.Ad,
+            Soyad                = model.Soyad,
+            Eposta               = model.Eposta,
+            Telefon              = model.Telefon,
+            SifreHash            = null,  // şifre oluşturma maili ile belirlenecek
+            AktiflikDurumu       = true,
+            IkiFaktorluDogrulama = false,
+            OlusturmaTarihi      = DateTime.Now
+        };
 
-        _context.Kullanicis.Remove(kullanici);
+        _context.Kullanicis.Add(kullanici);
         await _context.SaveChangesAsync();
 
-        TempData["Basari"] = $"Kullanıcı kaydı silindi.";
-        return RedirectToAction(nameof(BekleyenKullanicilar));
+        TempData["Basari"] = $"{kullanici.Ad} {kullanici.Soyad} adlı kullanıcı oluşturuldu.";
+        return RedirectToAction(nameof(KullaniciOlustur));
     }
 }

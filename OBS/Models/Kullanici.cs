@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace OBS.Models;
@@ -15,7 +15,7 @@ public partial class Kullanici
 
     public string Telefon { get; set; } = null!;
 
-    public string SifreHash { get; set; } = null!;
+    public string? SifreHash { get; set; }
 
     public bool IkiFaktorluDogrulama { get; set; }
 

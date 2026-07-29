@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
@@ -243,7 +243,8 @@ public partial class ObsContext : DbContext
                 .HasColumnType("datetime");
             entity.Property(e => e.SifreHash)
                 .HasMaxLength(255)
-                .IsUnicode(false);
+                .IsUnicode(false)
+                .IsRequired(false);
             entity.Property(e => e.SonGuncellenmeTarihi).HasColumnType("datetime");
             entity.Property(e => e.Soyad)
                 .HasMaxLength(100)

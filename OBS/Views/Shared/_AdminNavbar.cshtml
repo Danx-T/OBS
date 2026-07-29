@@ -11,9 +11,9 @@
             </div>
             <ul class="admin-nav-links">
                 <li>
-                    <a asp-controller="Admin" asp-action="BekleyenKullanicilar"
-                       class="admin-nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "BekleyenKullanicilar" ? "active" : "")">
-                        <span>👤</span> Onay Bekleyenler
+                    <a asp-controller="Admin" asp-action="KullaniciOlustur"
+                       class="admin-nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "KullaniciOlustur" ? "active" : "")">
+                        <span>➕</span> Kullanıcı Oluştur
                     </a>
                 </li>
             </ul>
