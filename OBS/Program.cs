@@ -18,6 +18,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddSingleton<ITwoFactorService, TwoFactorService>();
 builder.Services.AddSingleton<IPasswordResetService, PasswordResetService>();
+builder.Services.AddSingleton<IPasswordSetupService, PasswordSetupService>();
 
 // Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

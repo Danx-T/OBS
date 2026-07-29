@@ -15,14 +15,17 @@ public class AuthController : Controller
     private readonly IEmailService _emailService;
     private readonly ITwoFactorService _twoFactorService;
     private readonly IPasswordResetService _passwordResetService;
+    private readonly IPasswordSetupService _passwordSetupService;
 
     public AuthController(ObsContext context, IEmailService emailService,
-        ITwoFactorService twoFactorService, IPasswordResetService passwordResetService)
+        ITwoFactorService twoFactorService, IPasswordResetService passwordResetService,
+        IPasswordSetupService passwordSetupService)
     {
         _context = context;
         _emailService = emailService;
         _twoFactorService = twoFactorService;
         _passwordResetService = passwordResetService;
+        _passwordSetupService = passwordSetupService;
     }
 
     // GET: /Auth/Login
@@ -354,5 +357,108 @@ public class AuthController : Controller
         </body>
         </html>
         """;
+    }
+
+    // GET: /Auth/SetPassword?token=xxx
+    [HttpGet]
+    public async Task<IActionResult> SetPassword(string token)
+    {
+        var kullaniciId = _passwordSetupService.GetKullaniciId(token);
+        if (!kullaniciId.HasValue)
+        {
+            TempData["Hata"] = "Şifre oluşturma bağlantısının süresi dolmuş veya geçersiz.";
+            return RedirectToAction(nameof(Login));
+        }
+
+        var kullanici = await _context.Kullanicis.FindAsync(kullaniciId.Value);
+        if (kullanici == null)
+        {
+            TempData["Hata"] = "Kullanıcı bulunamadı.";
+            return RedirectToAction(nameof(Login));
+        }
+
+        var model = new SetPasswordViewModel
+        {
+            Token = token,
+            AdSoyad = $"{kullanici.Ad} {kullanici.Soyad}",
+            Eposta = kullanici.Eposta
+        };
+
+        return View(model);
+    }
+
+    // POST: /Auth/SetPassword
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetPassword(SetPasswordViewModel model)
+    {
+        if (!ModelState.IsValid)
+            return View(model);
+
+        var kullaniciId = _passwordSetupService.GetKullaniciId(model.Token);
+        if (!kullaniciId.HasValue)
+        {
+            TempData["Hata"] = "Şifre oluşturma bağlantısının süresi dolmuş veya bağlantı daha önce kullanılmış.";
+            return RedirectToAction(nameof(Login));
+        }
+
+        var kullanici = await _context.Kullanicis.FindAsync(kullaniciId.Value);
+        if (kullanici == null)
+        {
+            TempData["Hata"] = "Kullanıcı bulunamadı.";
+            return RedirectToAction(nameof(Login));
+        }
+
+        // Şifreyi hashle ve kaydet
+        kullanici.SifreHash = BCrypt.Net.BCrypt.HashPassword(model.Sifre);
+        await _context.SaveChangesAsync();
+
+        // Tokeni kullanıldı olarak işaretle (sil)
+        _passwordSetupService.InvalidateToken(model.Token);
+
+        TempData["Basari"] = "Tebrikler! Şifreniz başarıyla oluşturuldu. Artık sisteme giriş yapabilirsiniz.";
+        return RedirectToAction(nameof(Login));
+    }
+
+    // GET: /Auth/FirstLogin
+    [HttpGet]
+    public IActionResult FirstLogin()
+    {
+        return View();
+    }
+
+    // POST: /Auth/FirstLogin
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> FirstLogin(string eposta)
+    {
+        if (string.IsNullOrWhiteSpace(eposta))
+        {
+            TempData["Hata"] = "Lütfen e-posta adresinizi giriniz.";
+            return View();
+        }
+
+        eposta = eposta.Trim();
+        var kullanici = await _context.Kullanicis.FirstOrDefaultAsync(k => k.Eposta == eposta);
+
+        if (kullanici == null)
+        {
+            TempData["Hata"] = "Sistemde bu e-posta adresiyle kayıtlı bir hesap bulunamadı.";
+            return View();
+        }
+
+        if (!string.IsNullOrEmpty(kullanici.SifreHash))
+        {
+            TempData["Hata"] = "Bu hesap için zaten bir şifre belirlenmiş. Şifrenizi unuttuysanız 'Şifremi Unuttum' ekranını kullanabilirsiniz.";
+            return View();
+        }
+
+        // Token üret ve e-posta gönder
+        var token = _passwordSetupService.GenerateToken(kullanici.Id);
+        var setupLink = Url.Action("SetPassword", "Auth", new { token }, Request.Scheme);
+        await _passwordSetupService.SendSetupEmailAsync(kullanici.Eposta, $"{kullanici.Ad} {kullanici.Soyad}", setupLink!);
+
+        TempData["Basari"] = $"Şifre oluşturma bağlantısı {kullanici.Eposta} adresine gönderildi. Lütfen e-postanızı kontrol ediniz. (Test Linki: {setupLink})";
+        return RedirectToAction(nameof(Login));
     }
 }

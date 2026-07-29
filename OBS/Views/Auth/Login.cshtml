@@ -156,9 +156,13 @@
 
             <div asp-validation-summary="All" class="text-danger small mb-3"></div>
 
-            <button type="submit" class="btn btn-primary w-100">Giriş Yap</button>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1">Giriş Yap</button>
+                <a asp-action="FirstLogin" asp-controller="Auth" class="btn btn-outline-primary flex-grow-1 d-flex align-items-center justify-content-center" style="text-decoration: none; font-weight: 500;">
+                    🔑 Şifre Al
+                </a>
+            </div>
         </form>
-
     </div>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
