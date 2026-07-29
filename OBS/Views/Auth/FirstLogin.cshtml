@@ -1,0 +1,120 @@
+@{
+    Layout = null;
+    ViewData["Title"] = "İlk Kez Giriş";
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>İlk Kez Giriş - OBS</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .auth-card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2563eb;
+            letter-spacing: 0.05em;
+        }
+
+        .auth-card h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .auth-card .subtitle {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .btn-primary {
+            background-color: #2563eb;
+            border-color: #2563eb;
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+            border-color: #1d4ed8;
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 1.25rem;
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+
+        .auth-footer a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-card">
+        <div class="brand">OBS - ÖĞRENCİ BİLGİ SİSTEMİ</div>
+
+        <h1>İlk Kez Giriş</h1>
+        <p class="subtitle">Admin tarafından oluşturulan hesabınızın şifresini belirlemek için kayıtlı e-posta adresinizi giriniz.</p>
+
+        @if (TempData["Hata"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show py-2" role="alert" style="font-size: 0.85rem;">
+                @TempData["Hata"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <form asp-action="FirstLogin" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="mb-4">
+                <label class="form-label">E-posta</label>
+                <input type="email" name="eposta" class="form-control" placeholder="ornek@mail.com" required autofocus />
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Şifre Oluşturma Linki Gönder</button>
+        </form>
+
+        <div class="auth-footer">
+            <a asp-action="Login">← Giriş sayfasına dön</a>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

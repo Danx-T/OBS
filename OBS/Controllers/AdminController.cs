@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using OBS.Models;
+using OBS.Services;
 using OBS.ViewModels;
 
 namespace OBS.Controllers;
@@ -11,10 +12,12 @@ namespace OBS.Controllers;
 public class AdminController : Controller
 {
     private readonly ObsContext _context;
+    private readonly IPasswordSetupService _passwordSetupService;
 
-    public AdminController(ObsContext context)
+    public AdminController(ObsContext context, IPasswordSetupService passwordSetupService)
     {
         _context = context;
+        _passwordSetupService = passwordSetupService;
     }
 
     // GET: /Admin/KullaniciOlustur
@@ -138,10 +141,15 @@ public class AdminController : Controller
             await _context.SaveChangesAsync();
         }
 
+        // 3) Şifre oluşturma (setup) tokeni üret ve e-posta gönder
+        var token = _passwordSetupService.GenerateToken(kullanici.Id);
+        var setupLink = Url.Action("SetPassword", "Auth", new { token }, Request.Scheme);
+        await _passwordSetupService.SendSetupEmailAsync(kullanici.Eposta, $"{kullanici.Ad} {kullanici.Soyad}", setupLink!);
+
         var tipMesaj = model.KullaniciTipi == "Ogrenci" ? " (Öğrenci olarak)" :
                        model.KullaniciTipi == "OgretimUyesi" ? " (Öğretim Üyesi olarak)" : "";
 
-        TempData["Basari"] = $"{kullanici.Ad} {kullanici.Soyad} adlı kullanıcı{tipMesaj} başarıyla oluşturuldu.";
+        TempData["Basari"] = $"{kullanici.Ad} {kullanici.Soyad} adlı kullanıcı{tipMesaj} başarıyla oluşturuldu! Kurulum e-postası ({kullanici.Eposta}) adresine gönderildi. Test Linki: {setupLink}";
         return RedirectToAction(nameof(KullaniciOlustur));
     }
 
