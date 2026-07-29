@@ -171,4 +171,119 @@ public class AdminController : Controller
         ViewBag.Fakulteler = new SelectList(fakulteler, "Id", "Adi");
         ViewBag.BolumlerListesi = bolumler;
     }
+
+    // GET: /Admin/DanismanAtama
+    [HttpGet]
+    public async Task<IActionResult> DanismanAtama(int? bolumId, string? arama)
+    {
+        var query = _context.Ogrencis
+            .Include(o => o.Kullanici)
+            .Include(o => o.Organizasyon)
+            .Include(o => o.Danisman)
+                .ThenInclude(d => d!.Kullanici)
+            .AsQueryable();
+
+        if (bolumId.HasValue && bolumId.Value > 0)
+        {
+            query = query.Where(o => o.OrganizasyonId == bolumId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(arama))
+        {
+            arama = arama.Trim().ToLower();
+            query = query.Where(o => o.OgrenciNo.ToLower().Contains(arama) ||
+                                     o.Kullanici.Ad.ToLower().Contains(arama) ||
+                                     o.Kullanici.Soyad.ToLower().Contains(arama));
+        }
+
+        var ogrenciler = await query
+            .OrderBy(o => o.Organizasyon.Adi)
+            .ThenBy(o => o.Sinif)
+            .ThenBy(o => o.OgrenciNo)
+            .ToListAsync();
+
+        var model = ogrenciler.Select(o => new DanismanAtamaViewModel
+        {
+            OgrenciId = o.Id,
+            OgrenciNo = o.OgrenciNo,
+            AdSoyad = $"{o.Kullanici.Ad} {o.Kullanici.Soyad}",
+            BolumAdi = o.Organizasyon.Adi,
+            Sinif = o.Sinif,
+            DanismanId = o.DanismanId,
+            DanismanAdSoyad = o.Danisman != null ? $"{o.Danisman.Unvan} {o.Danisman.Kullanici.Ad} {o.Danisman.Kullanici.Soyad}".Trim() : null
+        }).ToList();
+
+        // Bölüm listesi (filtreleme için)
+        var bolumler = await _context.Organizasyons
+            .Where(o => o.Durum && o.UstOrganizasyonId != null)
+            .OrderBy(o => o.Adi)
+            .ToListAsync();
+        ViewBag.Bolumler = new SelectList(bolumler, "Id", "Adi", bolumId);
+
+        // Öğretim Üyeleri listesi
+        var hocalar = await _context.OgretimUyesis
+            .Include(ou => ou.Kullanici)
+            .Include(ou => ou.Organizasyon)
+            .OrderBy(ou => ou.Organizasyon.Adi)
+            .ThenBy(ou => ou.Kullanici.Ad)
+            .ToListAsync();
+
+        ViewBag.HocaListesi = hocalar.Select(h => new
+        {
+            h.Id,
+            AdSoyad = $"{h.Unvan} {h.Kullanici.Ad} {h.Kullanici.Soyad}".Trim(),
+            BolumAdi = h.Organizasyon.Adi
+        }).ToList();
+
+        ViewBag.SeciliBolumId = bolumId;
+        ViewBag.Arama = arama;
+
+        return View(model);
+    }
+
+    // POST: /Admin/TopluDanismanAta
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> TopluDanismanAta(List<int> ogrenciId, List<int?> danismanId, int? bolumId, string? arama)
+    {
+        if (ogrenciId == null || !ogrenciId.Any())
+        {
+            TempData["Hata"] = "Güncellenecek öğrenci bulunamadı.";
+            return RedirectToAction(nameof(DanismanAtama), new { bolumId, arama });
+        }
+
+        var ogrenciler = await _context.Ogrencis
+            .Where(o => ogrenciId.Contains(o.Id))
+            .ToListAsync();
+
+        int guncellenenSayisi = 0;
+        for (int i = 0; i < ogrenciId.Count; i++)
+        {
+            var id = ogrenciId[i];
+            var dId = (danismanId != null && i < danismanId.Count) ? danismanId[i] : null;
+
+            var ogrenci = ogrenciler.FirstOrDefault(o => o.Id == id);
+            if (ogrenci != null)
+            {
+                var yeniDanismanId = (dId.HasValue && dId.Value > 0) ? dId.Value : (int?)null;
+                if (ogrenci.DanismanId != yeniDanismanId)
+                {
+                    ogrenci.DanismanId = yeniDanismanId;
+                    guncellenenSayisi++;
+                }
+            }
+        }
+
+        if (guncellenenSayisi > 0)
+        {
+            await _context.SaveChangesAsync();
+            TempData["Basari"] = $"{guncellenenSayisi} öğrencinin danışman bilgisi başarıyla güncellendi!";
+        }
+        else
+        {
+            TempData["Basari"] = "Herhangi bir değişiklik yapılmadı.";
+        }
+
+        return RedirectToAction(nameof(DanismanAtama), new { bolumId, arama });
+    }
 }

@@ -16,6 +16,12 @@
                         <span>➕</span> Kullanıcı Oluştur
                     </a>
                 </li>
+                <li>
+                    <a asp-controller="Admin" asp-action="DanismanAtama"
+                       class="admin-nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "DanismanAtama" ? "active" : "")">
+                        <span>👨‍🏫</span> Danışman Atama
+                    </a>
+                </li>
             </ul>
             <div class="admin-nav-user">
                 <span class="admin-nav-username">@User.Identity!.Name</span>
