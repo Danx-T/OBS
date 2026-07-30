@@ -45,7 +45,10 @@ public class AuthController : Controller
     public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
     {
         if (!ModelState.IsValid)
+        {
+            ViewBag.ReturnUrl = returnUrl;
             return View(model);
+        }
 
         var kullanici = _context.Kullanicis
             .FirstOrDefault(k => k.Eposta == model.Eposta);
@@ -144,7 +147,19 @@ public class AuthController : Controller
     public async Task<IActionResult> Verify2FA(VerifyViewModel model, string? returnUrl = null)
     {
         if (!ModelState.IsValid)
+        {
+            var k = _context.Kullanicis.Find(model.KullaniciId);
+            if (k != null)
+            {
+                var eposta = k.Eposta;
+                var atIndex = eposta.IndexOf('@');
+                ViewBag.MaskedEmail = atIndex > 3
+                    ? eposta[..3] + new string('*', atIndex - 3) + eposta[atIndex..]
+                    : eposta[..1] + "***" + eposta[atIndex..];
+            }
+            ViewBag.ReturnUrl = returnUrl;
             return View(model);
+        }
 
         var kullanici = _context.Kullanicis.Find(model.KullaniciId);
         if (kullanici == null)
@@ -393,7 +408,22 @@ public class AuthController : Controller
     public async Task<IActionResult> SetPassword(SetPasswordViewModel model)
     {
         if (!ModelState.IsValid)
+        {
+            if (string.IsNullOrEmpty(model.AdSoyad) || string.IsNullOrEmpty(model.Eposta))
+            {
+                var id = _passwordSetupService.GetKullaniciId(model.Token);
+                if (id.HasValue)
+                {
+                    var k = await _context.Kullanicis.FindAsync(id.Value);
+                    if (k != null)
+                    {
+                        model.AdSoyad = $"{k.Ad} {k.Soyad}";
+                        model.Eposta = k.Eposta;
+                    }
+                }
+            }
             return View(model);
+        }
 
         var kullaniciId = _passwordSetupService.GetKullaniciId(model.Token);
         if (!kullaniciId.HasValue)
