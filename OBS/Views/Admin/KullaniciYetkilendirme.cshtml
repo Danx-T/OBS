@@ -1,0 +1,466 @@
+@model OBS.ViewModels.KullaniciYetkilendirmeViewModel
+@{
+    ViewData["Title"] = "Kullanıcı Yetki & Rol Atamaları";
+}
+
+<style>
+    :root {
+        --primary: #2563eb;
+        --primary-dark: #1e40af;
+        --secondary: #64748b;
+        --success: #10b981;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --bg-glass: rgba(255, 255, 255, 0.85);
+        --border-glass: rgba(226, 232, 240, 0.8);
+    }
+
+    .ky-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .ky-title h1 {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0;
+        letter-spacing: -0.02em;
+    }
+
+    .ky-title p {
+        color: #64748b;
+        font-size: 0.95rem;
+        margin: 4px 0 0 0;
+    }
+
+    .stats-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        background: #eff6ff;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+    }
+
+    .filter-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+    }
+
+    .ky-card {
+        background: var(--bg-glass);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--border-glass);
+        border-radius: 16px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+        overflow: hidden;
+    }
+
+    .table-custom {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table-custom th {
+        background: #f8fafc;
+        padding: 14px 16px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #475569;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .table-custom td {
+        padding: 16px;
+        font-size: 0.9rem;
+        color: #1e293b;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .table-custom tr:hover td {
+        background: #f8fafc;
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+    }
+
+    .role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.78rem;
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+        margin: 2px;
+    }
+
+    .permission-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.75rem;
+        font-family: 'Fira Code', monospace;
+        background: #ecfdf5;
+        color: #047857;
+        border: 1px solid #a7f3d0;
+        margin: 2px;
+    }
+
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .btn-action.primary {
+        background: var(--primary);
+        color: #fff;
+    }
+
+    .btn-action.primary:hover {
+        background: var(--primary-dark);
+        color: #fff;
+    }
+
+    .btn-action.light {
+        background: #f1f5f9;
+        color: #334155;
+    }
+
+    .btn-action.light:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+
+    .checkbox-item-card {
+        background: #fff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 12px 14px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .checkbox-item-card:hover {
+        border-color: #93c5fd;
+        background: #f8fafc;
+    }
+
+    .checkbox-item-card.selected {
+        border-color: var(--primary);
+        background: #eff6ff;
+    }
+
+    .checkbox-item-card input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: var(--primary);
+    }
+
+    .ky-wrap {
+        max-width: 1350px;
+        margin: 36px auto;
+        padding: 0 20px 60px;
+    }
+</style>
+
+<div class="ky-wrap">
+    <div class="ky-header">
+        <div class="ky-title">
+            <h1>👤 Kullanıcı Yetki & Rol Atamaları</h1>
+        <p>Kullanıcılara sistem rolleri atayın veya rol bağımsız özel erişim yetkileri tanımlayın.</p>
+    </div>
+    <div class="stats-pill">
+        <span>👥</span> @Model.Kullanicilar.Count Kullanıcı Listeleniyor
+    </div>
+</div>
+
+@if (TempData["Basari"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert" style="border-radius:12px;">
+        <strong>✓ Başarılı:</strong> @TempData["Basari"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["Hata"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert" style="border-radius:12px;">
+        <strong>✕ Hata:</strong> @TempData["Hata"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="filter-card">
+    <form method="get" asp-action="KullaniciYetkilendirme" asp-controller="Admin" class="row g-3 align-items-center">
+        <div class="col-md-5">
+            <label class="form-label fw-bold small text-muted mb-1">Arama</label>
+            <div class="input-group">
+                <span class="input-group-text bg-light border-end-0">🔍</span>
+                <input type="text" name="arama" class="form-control border-start-0" placeholder="Ad, Soyad veya E-posta arayın..." value="@Model.Arama" />
+            </div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-bold small text-muted mb-1">Bölüm / Organizasyon Filtresi</label>
+            <select name="bolumId" asp-items="ViewBag.Bolumler" class="form-select">
+                <option value="">Tüm Bölümler / Organizasyonlar</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex align-items-end gap-2" style="margin-top: 30px;">
+            <button type="submit" class="btn-action primary flex-grow-1 justify-content-center">
+                Filtrele
+            </button>
+            @if (!string.IsNullOrWhiteSpace(Model.Arama) || (Model.BolumId.HasValue && Model.BolumId > 0))
+            {
+                <a asp-action="KullaniciYetkilendirme" asp-controller="Admin" class="btn-action light" title="Filtreyi Temizle">
+                    ✕ Sıfırla
+                </a>
+            }
+        </div>
+    </form>
+</div>
+
+<div class="ky-card">
+    <div class="table-responsive">
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>Kullanıcı</th>
+                    <th>Tipi / Bölüm</th>
+                    <th>Atanan Roller</th>
+                    <th>Doğrudan Ek Yetkiler</th>
+                    <th class="text-end">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Kullanicilar.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <div style="font-size:2rem; margin-bottom:8px;">👥</div>
+                            <p class="mb-0 fw-semibold">Aradığınız kriterlere uygun kullanıcı bulunamadı.</p>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var k in Model.Kullanicilar)
+                    {
+                        var initials = k.AdSoyad.Length >= 2
+                            ? $"{k.AdSoyad[0]}{k.AdSoyad.Split(' ').LastOrDefault()?[0]}"
+                            : "U";
+
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="user-avatar">@initials</div>
+                                    <div>
+                                        <div class="fw-bold">@k.AdSoyad</div>
+                                        <div class="text-muted small">@k.Eposta</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark">@k.KullaniciTipi</div>
+                                <div class="text-muted small">@k.BolumAdi</div>
+                            </td>
+                            <td>
+                                @if (k.Roller.Any())
+                                {
+                                    @foreach (var r in k.Roller)
+                                    {
+                                        <span class="role-badge">🛡️ @r</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">- Rol Atanmamış -</span>
+                                }
+                            </td>
+                            <td>
+                                @if (k.DogrudanYetkiler.Any())
+                                {
+                                    @foreach (var y in k.DogrudanYetkiler)
+                                    {
+                                        <span class="permission-badge">⚡ @y</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">- Ek Yetki Yok -</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <button type="button" class="btn-action light"
+                                        onclick="openAuthModal(@k.KullaniciId, '@Html.Raw(k.AdSoyad.Replace("'", "\\'"))', '@k.Eposta', [@string.Join(",", k.RolIdler)], [@string.Join(",", k.DogrudanYetkiIdler)])">
+                                    <span>⚙️</span> Yetkileri Düzenle
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+
+<!-- KULLANICI YETKİLENDİRME MODALI -->
+<div class="modal fade" id="yetkilendirmeModal" tabindex="-1" aria-labelledby="yetkilendirmeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);">
+            <form asp-action="KullaniciYetkilendirmeKaydet" asp-controller="Admin" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="KullaniciId" id="modalKullaniciId" />
+                <input type="hidden" name="Arama" value="@Model.Arama" />
+                <input type="hidden" name="BolumId" value="@Model.BolumId" />
+
+                <div class="modal-header border-0 pb-0">
+                    <div>
+                        <h5 class="modal-title fw-bold" id="yetkilendirmeModalLabel">⚙️ Kullanıcı Rol & Yetki Ataması</h5>
+                        <p class="text-muted small mb-0" id="modalUserInfo"></p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body py-4">
+                    <h6 class="fw-bold text-dark mb-2">1. Sistem Rolleri</h6>
+                    <p class="text-muted small mb-3">Kullanıcıya atanacak rolleri işaretleyin. Kullanıcı bu rollere tanımlı tüm yetkileri devralır.</p>
+                    <div class="row g-2 mb-4">
+                        @foreach (var rol in Model.TumRoller)
+                        {
+                            <div class="col-md-4">
+                                <label class="checkbox-item-card" id="card_rol_@rol.Id">
+                                    <input type="checkbox" name="SeciliRolIdler" value="@rol.Id" id="modal_rol_@rol.Id" onclick="updateItemCard(this)" />
+                                    <div>
+                                        <div class="fw-bold text-dark" style="font-size:0.9rem;">@rol.RolAdi</div>
+                                        <div class="text-muted" style="font-size:0.75rem;">@(string.IsNullOrWhiteSpace(rol.Aciklama) ? "Genel rol tanımı" : rol.Aciklama)</div>
+                                    </div>
+                                </label>
+                            </div>
+                        }
+                    </div>
+
+                    <h6 class="fw-bold text-dark mb-2">2. Doğrudan Ek Yetkiler</h6>
+                    <p class="text-muted small mb-3">Rol dışında kullanıcıya doğrudan ve bağımsız olarak vermek istediğiniz özel erişim yetkileri.</p>
+                    <div class="row g-2">
+                        @foreach (var yetki in Model.TumYetkiler)
+                        {
+                            <div class="col-md-4">
+                                <label class="checkbox-item-card" id="card_yetki_@yetki.Id">
+                                    <input type="checkbox" name="SeciliYetkiIdler" value="@yetki.Id" id="modal_yetki_@yetki.Id" onclick="updateItemCard(this)" />
+                                    <div>
+                                        <div class="fw-bold text-dark" style="font-size:0.85rem; font-family:'Fira Code',monospace;">@yetki.YetkiKodu</div>
+                                        <div class="text-muted" style="font-size:0.75rem;">@(string.IsNullOrWhiteSpace(yetki.Aciklama) ? "Özel yetki izni" : yetki.Aciklama)</div>
+                                    </div>
+                                </label>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn-action primary">Değişiklikleri Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openAuthModal(kullaniciId, adSoyad, eposta, rolIdler, yetkiIdler) {
+            document.getElementById('modalKullaniciId').value = kullaniciId;
+            document.getElementById('modalUserInfo').textContent = `${adSoyad} (${eposta})`;
+
+            // Tüm seçimleri sıfırla
+            document.querySelectorAll('#yetkilendirmeModal input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+                updateItemCard(cb);
+            });
+
+            // Aktif rolleri işaretle
+            if (rolIdler && rolIdler.length) {
+                rolIdler.forEach(rId => {
+                    const cb = document.getElementById('modal_rol_' + rId);
+                    if (cb) {
+                        cb.checked = true;
+                        updateItemCard(cb);
+                    }
+                });
+            }
+
+            // Aktif doğrudan yetkileri işaretle
+            if (yetkiIdler && yetkiIdler.length) {
+                yetkiIdler.forEach(yId => {
+                    const cb = document.getElementById('modal_yetki_' + yId);
+                    if (cb) {
+                        cb.checked = true;
+                        updateItemCard(cb);
+                    }
+                });
+            }
+
+            const modalEl = document.getElementById('yetkilendirmeModal');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+
+        function updateItemCard(checkbox) {
+            const card = checkbox.closest('.checkbox-item-card');
+            if (card) {
+                if (checkbox.checked) card.classList.add('selected');
+                else card.classList.remove('selected');
+            }
+        }
+    </script>
+}
