@@ -228,10 +228,13 @@ public class AdminController : Controller
             .ToListAsync();
         ViewBag.Bolumler = new SelectList(bolumler, "Id", "Adi", bolumId);
 
-        // Öğretim Üyeleri listesi
+        // Öğretim Üyeleri listesi - sadece 'Danışman' rolü atanmış olanlar
         var hocalar = await _context.OgretimUyesis
             .Include(ou => ou.Kullanici)
+                .ThenInclude(k => k.KullaniciRols)
+                    .ThenInclude(kr => kr.Rol)
             .Include(ou => ou.Organizasyon)
+            .Where(ou => ou.Kullanici.KullaniciRols.Any(kr => kr.Rol.RolAdi.Contains("Danışman") || kr.Rol.RolAdi.Contains("Danisman")))
             .OrderBy(ou => ou.Organizasyon.Adi)
             .ThenBy(ou => ou.Kullanici.Ad)
             .ToListAsync();
@@ -264,6 +267,11 @@ public class AdminController : Controller
             .Where(o => ogrenciId.Contains(o.Id))
             .ToListAsync();
 
+        var gecerliDanismanIdler = await _context.OgretimUyesis
+            .Where(ou => ou.Kullanici.KullaniciRols.Any(kr => kr.Rol.RolAdi.Contains("Danışman") || kr.Rol.RolAdi.Contains("Danisman")))
+            .Select(ou => ou.Id)
+            .ToListAsync();
+
         int guncellenenSayisi = 0;
         for (int i = 0; i < ogrenciId.Count; i++)
         {
@@ -274,6 +282,11 @@ public class AdminController : Controller
             if (ogrenci != null)
             {
                 var yeniDanismanId = (dId.HasValue && dId.Value > 0) ? dId.Value : (int?)null;
+                if (yeniDanismanId.HasValue && !gecerliDanismanIdler.Contains(yeniDanismanId.Value))
+                {
+                    continue; // Danışman rolü olmayan bir öğretim üyesi atanamaz
+                }
+
                 if (ogrenci.DanismanId != yeniDanismanId)
                 {
                     ogrenci.DanismanId = yeniDanismanId;

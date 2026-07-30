@@ -221,6 +221,13 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
+@if (ViewBag.HocaListesi != null && ViewBag.HocaListesi.Count == 0)
+{
+    <div class="alert alert-warning alert-dismissible fade show" role="alert" style="border-radius: 12px; margin-bottom: 20px;">
+        ⚠️ <strong>Uyarı:</strong> Sistemde şu anda <strong>"Danışman"</strong> rolüne sahip hiçbir öğretim üyesi bulunmuyor. Bu nedenle listede atama yapılacak hoca gözükmez. Danışman ataması yapabilmek için önce <a asp-action="KullaniciYetkilendirme" asp-controller="Admin" class="alert-link">Kullanıcı Yetkileri</a> ekranından ilgili öğretim üyelerine <strong>Danışman</strong> rolünü veriniz.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
 
 <div class="filter-card">
     <form method="get" asp-action="DanismanAtama" class="filter-form">

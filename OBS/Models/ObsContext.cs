@@ -481,7 +481,7 @@ public partial class ObsContext : DbContext
                 .HasMaxLength(255)
                 .IsUnicode(false);
             entity.Property(e => e.YetkiKodu)
-                .HasMaxLength(10)
+                .HasMaxLength(30)
                 .IsUnicode(false);
         });
 
