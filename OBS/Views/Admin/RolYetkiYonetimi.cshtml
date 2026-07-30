@@ -1,0 +1,639 @@
+@model OBS.ViewModels.RolYetkiYonetimiViewModel
+@{
+    ViewData["Title"] = "Rol & Yetki Yönetimi";
+    var korunanRoller = new[] { "Admin", "Ogrenci", "OgretimUyesi" };
+}
+
+<style>
+    :root {
+        --primary: #2563eb;
+        --primary-dark: #1e40af;
+        --secondary: #64748b;
+        --success: #10b981;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --bg-glass: rgba(255, 255, 255, 0.85);
+        --border-glass: rgba(226, 232, 240, 0.8);
+    }
+
+    .ry-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .ry-title h1 {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0;
+        letter-spacing: -0.02em;
+    }
+
+    .ry-title p {
+        color: #64748b;
+        font-size: 0.95rem;
+        margin: 4px 0 0 0;
+    }
+
+    .stats-bar {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .stat-pill {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        background: #f1f5f9;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .stat-pill.blue { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .stat-pill.green { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+    .stat-pill.purple { background: #faf5ff; color: #6b21a8; border-color: #e9d5ff; }
+
+    /* Glass Card & Tabs */
+    .ry-card {
+        background: var(--bg-glass);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--border-glass);
+        border-radius: 16px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+        overflow: hidden;
+    }
+
+    .nav-tabs-custom {
+        display: flex;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 8px 16px 0 16px;
+        gap: 8px;
+    }
+
+    .nav-tab-btn {
+        border: none;
+        background: transparent;
+        padding: 12px 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #64748b;
+        border-radius: 10px 10px 0 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .nav-tab-btn:hover {
+        color: #1e293b;
+        background: rgba(0,0,0,0.03);
+    }
+
+    .nav-tab-btn.active {
+        color: var(--primary);
+        background: #fff;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.03);
+    }
+
+    .nav-tab-btn.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--primary);
+    }
+
+    .tab-content-area {
+        padding: 24px;
+    }
+
+    .table-custom {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table-custom th {
+        background: #f8fafc;
+        padding: 14px 16px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #475569;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .table-custom td {
+        padding: 16px;
+        font-size: 0.9rem;
+        color: #1e293b;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .table-custom tr:hover td {
+        background: #f8fafc;
+    }
+
+    .role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+    }
+
+    .role-badge.sys {
+        background: #fff7ed;
+        color: #c2410c;
+        border-color: #fed7aa;
+    }
+
+    .permission-code {
+        font-family: 'Fira Code', 'Courier New', monospace;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 6px;
+        background: #f1f5f9;
+        color: #0f172a;
+        border: 1px solid #e2e8f0;
+    }
+
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .btn-action.primary {
+        background: var(--primary);
+        color: #fff;
+    }
+
+    .btn-action.primary:hover {
+        background: var(--primary-dark);
+        color: #fff;
+    }
+
+    .btn-action.danger {
+        background: #fef2f2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+    }
+
+    .btn-action.danger:hover {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .btn-action.light {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .btn-action.light:hover {
+        background: #e2e8f0;
+        color: #1e293b;
+    }
+
+    /* Yetki Matrisi Grid */
+    .matrix-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+        margin-top: 20px;
+    }
+
+    .yetki-card-item {
+        background: #fff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .yetki-card-item:hover {
+        border-color: #93c5fd;
+        box-shadow: 0 4px 12px rgba(37,99,235,0.06);
+        transform: translateY(-2px);
+    }
+
+    .yetki-card-item.selected {
+        border-color: var(--primary);
+        background: #eff6ff;
+    }
+
+    .yetki-checkbox {
+        width: 18px;
+        height: 18px;
+        margin-top: 2px;
+        cursor: pointer;
+        accent-color: var(--primary);
+    }
+
+    .yetki-info {
+        flex: 1;
+    }
+
+    .yetki-info h4 {
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+        color: #0f172a;
+    }
+
+    .yetki-info p {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin: 0;
+        line-height: 1.3;
+    }
+
+    .ry-wrap {
+        max-width: 1350px;
+        margin: 36px auto;
+        padding: 0 20px 60px;
+    }
+</style>
+
+<div class="ry-wrap">
+    <div class="ry-header">
+        <div class="ry-title">
+            <h1>🔑 Rol & Yetki Yönetimi</h1>
+        <p>Sistem rolleri, erişim yetkileri ve rollerin sahip olduğu izinlerin merkezi yönetim ekranı.</p>
+    </div>
+    <div class="stats-bar">
+        <div class="stat-pill blue">
+            <span>🛡️</span> @Model.Roller.Count Rol Tanımlı
+        </div>
+        <div class="stat-pill green">
+            <span>⚡</span> @Model.Yetkiler.Count Yetki Tanımlı
+        </div>
+        <div class="stat-pill purple">
+            <span>🔗</span> @Model.RolYetkiler.Count Toplam Atama
+        </div>
+    </div>
+</div>
+
+@if (TempData["Basari"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert" style="border-radius:12px;">
+        <strong>✓ Başarılı:</strong> @TempData["Basari"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["Hata"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert" style="border-radius:12px;">
+        <strong>✕ Hata:</strong> @TempData["Hata"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="ry-card">
+    <div class="nav-tabs-custom">
+        <button class="nav-tab-btn active" onclick="switchTab('roller-tab', this)">
+            <span>🛡️</span> Roller (@Model.Roller.Count)
+        </button>
+        <button class="nav-tab-btn" onclick="switchTab('yetkiler-tab', this)">
+            <span>⚡</span> Yetkiler (@Model.Yetkiler.Count)
+        </button>
+        <button class="nav-tab-btn" onclick="switchTab('matris-tab', this)" id="matrisTabBtn">
+            <span>🎛️</span> Rol - Yetki Matrisi
+        </button>
+    </div>
+
+    <div class="tab-content-area">
+        <!-- ROLS TAB -->
+        <div id="roller-tab" class="tab-pane-custom">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="h6 mb-1 fw-bold">Tanımlı Sistem Rolleri</h3>
+                    <p class="text-muted small mb-0">Sistem içindeki kullanıcı gruplarını ve hiyerarşik rolleri görüntüleyin.</p>
+                </div>
+                <button type="button" class="btn-action primary" data-bs-toggle="modal" data-bs-target="#rolEkleModal">
+                    <span>➕</span> Yeni Rol Ekle
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">#ID</th>
+                            <th>Rol Adı</th>
+                            <th>Açıklama</th>
+                            <th class="text-center">Yetki Sayısı</th>
+                            <th class="text-end">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.Roller)
+                        {
+                            var yetkiSayisi = Model.RolYetkiler.Count(ry => ry.RolId == r.Id);
+                            var isKorunan = korunanRoller.Contains(r.RolAdi, StringComparer.OrdinalIgnoreCase);
+                            <tr>
+                                <td class="text-muted fw-bold">#@r.Id</td>
+                                <td>
+                                    <span class="role-badge @(isKorunan ? "sys" : "")">
+                                        @(isKorunan ? "🔒" : "🛡️") @r.RolAdi
+                                    </span>
+                                </td>
+                                <td>@(string.IsNullOrWhiteSpace(r.Aciklama) ? "-" : r.Aciklama)</td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary rounded-pill px-3 py-2">@yetkiSayisi</span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-flex justify-content-end align-items-center gap-2">
+                                        <button type="button" class="btn-action light" onclick="openMatrixForRole(@r.Id)">
+                                            <span>⚙️</span> Yetkileri Yönet
+                                        </button>
+                                        @if (!isKorunan)
+                                        {
+                                            <form asp-action="RolSil" asp-controller="Admin" method="post" class="m-0 p-0" onsubmit="return confirm('@r.RolAdi rolünü silmek istediğinize emin misiniz?');">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@r.Id" />
+                                                <button type="submit" class="btn-action danger">
+                                                    <span>🗑️</span> Sil
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small ms-2" title="Sistem için zorunlu roldür, silinemez.">Kilitli Rol</span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PERMISSIONS TAB -->
+        <div id="yetkiler-tab" class="tab-pane-custom" style="display:none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="h6 mb-1 fw-bold">Sistem İzinleri ve Yetki Kodları</h3>
+                    <p class="text-muted small mb-0">Özelliklere ve aksiyonlara erişim izni veren granüler yetki tanımları.</p>
+                </div>
+                <button type="button" class="btn-action primary" data-bs-toggle="modal" data-bs-target="#yetkiEkleModal">
+                    <span>➕</span> Yeni Yetki Ekle
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">#ID</th>
+                            <th>Yetki Kodu</th>
+                            <th>Açıklama</th>
+                            <th class="text-center">Kullanan Rol Sayısı</th>
+                            <th class="text-end">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var y in Model.Yetkiler)
+                        {
+                            var kullananRolSayisi = Model.RolYetkiler.Count(ry => ry.YetkiId == y.Id);
+                            <tr>
+                                <td class="text-muted fw-bold">#@y.Id</td>
+                                <td>
+                                    <span class="permission-code">@y.YetkiKodu</span>
+                                </td>
+                                <td>@(string.IsNullOrWhiteSpace(y.Aciklama) ? "-" : y.Aciklama)</td>
+                                <td class="text-center">
+                                    <span class="badge bg-secondary rounded-pill px-3 py-2">@kullananRolSayisi</span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-flex justify-content-end align-items-center">
+                                        <form asp-action="YetkiSil" asp-controller="Admin" method="post" class="m-0 p-0" onsubmit="return confirm('@y.YetkiKodu yetkisini silmek istediğinize emin misiniz?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@y.Id" />
+                                            <button type="submit" class="btn-action danger">
+                                                <span>🗑️</span> Sil
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- MATRIX TAB -->
+        <div id="matris-tab" class="tab-pane-custom" style="display:none;">
+            <form asp-action="RolYetkiKaydet" asp-controller="Admin" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="p-4 bg-light rounded-3 border mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <label for="selectRolId" class="fw-bold mb-0">Düzenlenecek Rol:</label>
+                        <select id="selectRolId" name="RolId" class="form-select form-select-lg" style="width: 260px;" onchange="onRoleChanged(this.value)">
+                            @foreach (var r in Model.Roller)
+                            {
+                                <option value="@r.Id">@r.RolAdi</option>
+                            }
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-action primary" style="font-size:0.95rem; padding: 10px 20px;">
+                        <span>💾</span> Seçili Rolün Yetkilerini Kaydet
+                    </button>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h4 class="h6 fw-bold mb-0">Yetki İzin Kutuları</h4>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleAllCheckboxes(true)">Tümünü Seç</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleAllCheckboxes(false)">Tümünü Temizle</button>
+                    </div>
+                </div>
+
+                <div class="matrix-grid">
+                    @foreach (var y in Model.Yetkiler)
+                    {
+                        <div class="yetki-card-item" onclick="toggleCardCheckbox('yetki_@y.Id')">
+                            <input type="checkbox" name="SeciliYetkiIdler" value="@y.Id" id="yetki_@y.Id" class="yetki-checkbox" onclick="event.stopPropagation(); updateCardSelection(this);" />
+                            <div class="yetki-info">
+                                <h4>@y.YetkiKodu</h4>
+                                <p>@(string.IsNullOrWhiteSpace(y.Aciklama) ? "Bu yetki için açıklama belirtilmemiştir." : y.Aciklama)</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- ROL EKLE MODAL -->
+<div class="modal fade" id="rolEkleModal" tabindex="-1" aria-labelledby="rolEkleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);">
+            <form asp-action="RolEkle" asp-controller="Admin" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="rolEkleModalLabel">➕ Yeni Sistem Rolü Ekle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Rol Adı <span class="text-danger">*</span></label>
+                        <input type="text" name="RolAdi" class="form-control" placeholder="Örn: BolumBaskani, Danisman" required maxlength="50" />
+                        <div class="form-text">Rol adı benzersiz olmalıdır.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Açıklama</label>
+                        <textarea name="Aciklama" class="form-control" rows="3" placeholder="Rolün sistemdeki amacı ve kapsamı..." maxlength="200"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn-action primary">Rolü Oluştur</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- YETKİ EKLE MODAL -->
+<div class="modal fade" id="yetkiEkleModal" tabindex="-1" aria-labelledby="yetkiEkleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);">
+            <form asp-action="YetkiEkle" asp-controller="Admin" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="yetkiEkleModalLabel">⚡ Yeni Erişim Yetkisi Ekle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Yetki Kodu <span class="text-danger">*</span></label>
+                        <input type="text" name="YetkiKodu" class="form-control text-uppercase" placeholder="Örn: DERS_ONAYLA, NOT_GIRIS" required maxlength="50" style="font-family:'Fira Code',monospace;" />
+                        <div class="form-text">Sadece büyük harf, rakam ve alt çizgi (_) kullanınız.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Açıklama</label>
+                        <textarea name="Aciklama" class="form-control" rows="3" placeholder="Yetkinin hangi ekranlara veya aksiyonlara izin verdiği..." maxlength="200"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn-action primary">Yetkiyi Tanımla</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const rolYetkilerData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RolYetkiler.Select(ry => new { ry.RolId, ry.YetkiId })));
+
+        function switchTab(tabId, btnEl) {
+            document.querySelectorAll('.tab-pane-custom').forEach(pane => pane.style.display = 'none');
+            document.querySelectorAll('.nav-tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(tabId).style.display = 'block';
+            if (btnEl) btnEl.classList.add('active');
+        }
+
+        function openMatrixForRole(rolId) {
+            switchTab('matris-tab', document.getElementById('matrisTabBtn'));
+            const selectEl = document.getElementById('selectRolId');
+            if (selectEl) {
+                selectEl.value = rolId;
+                onRoleChanged(rolId);
+            }
+        }
+
+        function onRoleChanged(rolId) {
+            // Uncheck all first
+            document.querySelectorAll('.yetki-checkbox').forEach(cb => {
+                cb.checked = false;
+                updateCardSelection(cb);
+            });
+
+            if (!rolId) return;
+            const assigned = rolYetkilerData.filter(x => x.RolId == rolId).map(x => x.YetkiId);
+            assigned.forEach(yId => {
+                const cb = document.getElementById('yetki_' + yId);
+                if (cb) {
+                    cb.checked = true;
+                    updateCardSelection(cb);
+                }
+            });
+        }
+
+        function toggleCardCheckbox(cbId) {
+            const cb = document.getElementById(cbId);
+            if (cb) {
+                cb.checked = !cb.checked;
+                updateCardSelection(cb);
+            }
+        }
+
+        function updateCardSelection(checkbox) {
+            const card = checkbox.closest('.yetki-card-item');
+            if (card) {
+                if (checkbox.checked) card.classList.add('selected');
+                else card.classList.remove('selected');
+            }
+        }
+
+        function toggleAllCheckboxes(state) {
+            document.querySelectorAll('.yetki-checkbox').forEach(cb => {
+                cb.checked = state;
+                updateCardSelection(cb);
+            });
+        }
+
+        // Sayfa ilk yüklendiğinde seçili rolün yetkilerini yükle
+        document.addEventListener('DOMContentLoaded', () => {
+            const selectEl = document.getElementById('selectRolId');
+            if (selectEl && selectEl.value) {
+                onRoleChanged(selectEl.value);
+            }
+        });
+    </script>
+}
