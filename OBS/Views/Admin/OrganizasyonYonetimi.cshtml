@@ -1,0 +1,525 @@
+@{
+    ViewData["Title"] = "Organizasyon Yönetimi";
+
+    var fakulteler = ViewBag.Fakulteler as List<OBS.Models.Organizasyon> ?? new();
+    var bolumler   = ViewBag.Bolumler   as List<OBS.Models.Organizasyon> ?? new();
+    int? secilenFakulteId = ViewBag.SecilenFakulteId;
+    var secilenFakulte    = ViewBag.SecilenFakulte as OBS.Models.Organizasyon;
+}
+
+<style>
+    :root {
+        --primary:      #2563eb;
+        --primary-dark: #1e40af;
+        --success:      #10b981;
+        --danger:       #ef4444;
+        --warning:      #f59e0b;
+        --muted:        #64748b;
+    }
+
+    /* ── WRAPPER ── */
+    .org-wrap {
+        max-width: 1300px;
+        margin: 36px auto;
+        padding: 0 20px 80px;
+        font-family: 'Outfit', 'Inter', 'Segoe UI', sans-serif;
+    }
+
+    /* ── HEADER ── */
+    .org-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 28px;
+    }
+
+    .org-title h1 {
+        font-size: 1.65rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0;
+        letter-spacing: -0.02em;
+    }
+
+    .org-title p {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin: 4px 0 0;
+    }
+
+    /* ── STAT PILLS ── */
+    .stats-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .stat-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 0.82rem;
+    }
+
+    .stat-pill.blue   { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+    .stat-pill.green  { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .stat-pill.purple { background: #faf5ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+
+    /* ── GLASS CARD ── */
+    .panel-card {
+        background: rgba(255,255,255,0.92);
+        backdrop-filter: blur(12px);
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.06);
+        overflow: hidden;
+    }
+
+    .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .panel-header .panel-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .cnt-badge {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 2px 10px;
+    }
+
+    /* ── FAKÜLTE LİSTESİ ── */
+    .fakulte-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 13px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        text-decoration: none;
+        color: #334155;
+        transition: background 0.12s;
+    }
+
+    .fakulte-item:last-of-type { border-bottom: none; }
+    .fakulte-item:hover { background: #f8fafc; color: #0f172a; }
+
+    .fakulte-item.selected {
+        background: #eff6ff;
+        border-left: 3px solid #2563eb;
+        color: #1e40af;
+    }
+
+    .f-name {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 0.88rem;
+        font-weight: 600;
+    }
+
+    .f-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* ── BÖLÜM LİSTESİ ── */
+    .bolum-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 13px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        transition: background 0.12s;
+    }
+
+    .bolum-row:last-of-type { border-bottom: none; }
+    .bolum-row:hover { background: #f8fafc; }
+
+    .b-name {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 0.88rem;
+        color: #334155;
+        font-weight: 500;
+    }
+
+    /* ── TYPE BADGES ── */
+    .type-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 9px;
+        border-radius: 8px;
+        font-size: 0.71rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .type-badge.fakulte     { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+    .type-badge.yuksekokul  { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .type-badge.enstitu     { background: #faf5ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+    .type-badge.bolum       { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .type-badge.program     { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+    .type-badge.diger       { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+
+    /* ── DURUM DOT ── */
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .dot.aktif { background: #10b981; }
+    .dot.pasif { background: #f59e0b; }
+
+    /* ── KOD CHIP ── */
+    .kod-chip {
+        font-family: 'Fira Code', monospace;
+        font-size: 0.72rem;
+        padding: 2px 7px;
+        border-radius: 6px;
+        background: #f1f5f9;
+        color: #64748b;
+        border: 1px solid #e2e8f0;
+    }
+
+    /* ── ACTION BUTTONS ── */
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.78rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .btn-danger-soft {
+        background: #fff1f2;
+        color: #be123c;
+        border: 1px solid #fecdd3;
+    }
+
+    .btn-danger-soft:hover {
+        background: #ef4444;
+        color: #fff;
+        border-color: #ef4444;
+    }
+
+    .btn-primary-soft {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+    }
+
+    .btn-primary-soft:hover {
+        background: #2563eb;
+        color: #fff;
+        border-color: #2563eb;
+    }
+
+    /* ── ADD FORM AREA ── */
+    .add-form-wrap {
+        padding: 16px 20px;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .add-form-label {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 10px;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+        text-align: center;
+        padding: 48px 20px;
+        color: var(--muted);
+    }
+
+    .empty-state .icon { font-size: 2.8rem; margin-bottom: 10px; }
+    .empty-state p { font-size: 0.9rem; margin: 0; }
+
+    /* ── BREADCRUMB ── */
+    .bc-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin-bottom: 12px;
+    }
+
+    .bc-bar a { color: var(--muted); text-decoration: none; }
+    .bc-bar a:hover { color: var(--primary); }
+    .bc-bar .current { color: var(--primary); font-weight: 700; }
+    .bc-bar .sep { color: #cbd5e1; }
+
+    /* ── DASHED PLACEHOLDER ── */
+    .placeholder-card {
+        border: 2px dashed #e2e8f0;
+        border-radius: 16px;
+        background: #fafbfc;
+    }
+
+    @@media (max-width: 768px) {
+        .org-wrap { padding: 0 12px 60px; }
+    }
+</style>
+
+<div class="org-wrap">
+
+    <!-- HEADER -->
+    <div class="org-header">
+        <div class="org-title">
+            <h1>🏛️ Organizasyon Yönetimi</h1>
+            <p>Fakülte ve bölümleri hiyerarşik olarak yönetin; ekleyin veya kaldırın.</p>
+        </div>
+        <div class="stats-row">
+            <span class="stat-pill blue">🏛️ Fakülte: @fakulteler.Count</span>
+            @if (secilenFakulte != null)
+            {
+                <span class="stat-pill green">📚 Bölüm: @bolumler.Count</span>
+            }
+        </div>
+    </div>
+
+    <!-- ALERTS -->
+    @if (TempData["Basari"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm mb-4" role="alert" style="border-radius:12px;">
+            <strong>✓ Başarılı:</strong> @TempData["Basari"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Hata"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert" style="border-radius:12px;">
+            <strong>✕ Hata:</strong> @TempData["Hata"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+
+        <!-- ═══════════════════════════════════
+             SOL: Fakülteler / Üst Birimler
+        ═══════════════════════════════════ -->
+        <div class="col-lg-5">
+            <div class="panel-card">
+                <div class="panel-header">
+                    <span class="panel-title">🏛️ Fakülteler / Üst Birimler</span>
+                    <span class="cnt-badge">@fakulteler.Count</span>
+                </div>
+
+                <div>
+                    @if (!fakulteler.Any())
+                    {
+                        <div class="empty-state">
+                            <div class="icon">🏛️</div>
+                            <p>Henüz fakülte / üst birim eklenmemiş.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var f in fakulteler)
+                        {
+                            bool isActive = secilenFakulteId == f.Id;
+
+                            string tbClass = (f.Tipi ?? "").ToLower() switch
+                            {
+                                var t when t.Contains("fakülte") || t.Contains("fakulte") => "fakulte",
+                                var t when t.Contains("yüksekokul") || t.Contains("yuksekokul") => "yuksekokul",
+                                var t when t.Contains("enstitü") || t.Contains("enstitu") => "enstitu",
+                                _ => "diger"
+                            };
+
+                            <a href="@Url.Action("OrganizasyonYonetimi", "Admin", new { fakulteId = f.Id })"
+                               class="fakulte-item @(isActive ? "selected" : "")">
+                                <span class="f-name">
+                                    <span>@(isActive ? "📂" : "📁")</span>
+                                    <span>@f.Adi</span>
+                                    @if (!string.IsNullOrEmpty(f.Kodu))
+                                    {
+                                        <span class="kod-chip">@f.Kodu</span>
+                                    }
+                                </span>
+                                <span class="f-meta">
+                                    <span class="type-badge @tbClass">@f.Tipi</span>
+                                    <span class="dot @(f.Durum ? "aktif" : "pasif")" title="@(f.Durum ? "Aktif" : "Pasif")"></span>
+                                </span>
+                            </a>
+                        }
+                    }
+                </div>
+
+                <!-- Fakülte Ekleme Formu -->
+                <div class="add-form-wrap">
+                    <div class="add-form-label">➕ Yeni Üst Birim Ekle</div>
+                    <form asp-action="FakulteEkle" asp-controller="Admin" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="d-flex flex-column gap-2">
+                            <input type="text" name="adi" class="form-control form-control-sm"
+                                   placeholder="Birim adı (ör: Mühendislik Fakültesi)" required id="fakulteAdiInput" />
+                            <div class="d-flex gap-2">
+                                <input type="text" name="kodu" class="form-control form-control-sm"
+                                       placeholder="Kod (ör: MF)" style="max-width:90px;" id="fakulteKoduInput" />
+                                <select name="tipi" class="form-select form-select-sm" id="fakulteTipiSelect">
+                                    <option value="Fakülte">Fakülte</option>
+                                    <option value="Yüksekokul">Yüksekokul</option>
+                                    <option value="Enstitü">Enstitü</option>
+                                    <option value="Meslek Yüksekokulu">Meslek Yüksekokulu</option>
+                                    <option value="Diğer">Diğer</option>
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-primary px-3 fw-600" id="fakulteEkleBtn"
+                                        style="white-space:nowrap; font-weight:600;">
+                                    Ekle
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════
+             SAĞ: Bölümler
+        ═══════════════════════════════════ -->
+        <div class="col-lg-7">
+            @if (secilenFakulte == null)
+            {
+                <div class="placeholder-card empty-state" style="padding: 64px 20px;">
+                    <div class="icon">👈</div>
+                    <p>Bölümleri görüntülemek için soldan bir fakülte seçin.</p>
+                </div>
+            }
+            else
+            {
+                <!-- Breadcrumb -->
+                <div class="bc-bar">
+                    <a href="@Url.Action("OrganizasyonYonetimi", "Admin")">🏛️ Fakülteler</a>
+                    <span class="sep">›</span>
+                    <span class="current">@secilenFakulte.Adi</span>
+                </div>
+
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <span class="panel-title">
+                            📚 Bölümler
+                            <span style="font-size:0.82rem; color:var(--muted); font-weight:500;">– @secilenFakulte.Adi</span>
+                        </span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="cnt-badge">@bolumler.Count</span>
+                            @if (!bolumler.Any())
+                            {
+                                <form asp-action="OrganizasyonSil" asp-controller="Admin" method="post" class="m-0"
+                                      onsubmit="return confirm('Bu fakülteyi silmek istediğinizden emin misiniz?')">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@secilenFakulte.Id" />
+                                    <input type="hidden" name="geriDonFakulteId" value="" />
+                                    <button type="submit" class="btn-action btn-danger-soft" id="fakulteSilBtn">
+                                        🗑️ Fakülteyi Sil
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+
+                    <div>
+                        @if (!bolumler.Any())
+                        {
+                            <div class="empty-state">
+                                <div class="icon">📂</div>
+                                <p>Bu fakülteye bağlı bölüm bulunamadı.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var b in bolumler)
+                            {
+                                string btClass = (b.Tipi ?? "").ToLower() switch
+                                {
+                                    var t when t.Contains("bölüm") || t.Contains("bolum") => "bolum",
+                                    var t when t.Contains("program") => "program",
+                                    _ => "diger"
+                                };
+
+                                <div class="bolum-row">
+                                    <span class="b-name">
+                                        <span>📄</span>
+                                        <span>@b.Adi</span>
+                                        @if (!string.IsNullOrEmpty(b.Kodu))
+                                        {
+                                            <span class="kod-chip">@b.Kodu</span>
+                                        }
+                                        <span class="type-badge @btClass">@b.Tipi</span>
+                                        <span class="dot @(b.Durum ? "aktif" : "pasif")"
+                                              title="@(b.Durum ? "Aktif" : "Pasif")"></span>
+                                    </span>
+                                    <form asp-action="OrganizasyonSil" asp-controller="Admin" method="post" class="m-0"
+                                          onsubmit="return confirm('Bu bölümü silmek istediğinizden emin misiniz?')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@b.Id" />
+                                        <input type="hidden" name="geriDonFakulteId" value="@secilenFakulte.Id" />
+                                        <button type="submit" class="btn-action btn-danger-soft" id="bolumSil_@b.Id">
+                                            🗑️ Sil
+                                        </button>
+                                    </form>
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    <!-- Bölüm Ekleme Formu -->
+                    <div class="add-form-wrap">
+                        <div class="add-form-label">➕ Bu Fakülteye Bölüm Ekle</div>
+                        <form asp-action="BolumEkle" asp-controller="Admin" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="fakulteId" value="@secilenFakulte.Id" />
+                            <div class="d-flex flex-column gap-2">
+                                <input type="text" name="adi" class="form-control form-control-sm"
+                                       placeholder="Bölüm adı (ör: Bilgisayar Mühendisliği)" required id="bolumAdiInput" />
+                                <div class="d-flex gap-2">
+                                    <input type="text" name="kodu" class="form-control form-control-sm"
+                                           placeholder="Kod (ör: BM)" style="max-width:90px;" id="bolumKoduInput" />
+                                    <button type="submit" class="btn btn-sm btn-primary px-3" id="bolumEkleBtn"
+                                            style="white-space:nowrap; font-weight:600;">
+                                        Ekle
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                </div>
+            }
+        </div>
+
+    </div>
+</div>

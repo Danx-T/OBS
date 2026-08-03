@@ -814,4 +814,176 @@ public class AdminController : Controller
         TempData["Basari"] = $"'{adSoyad}' kullanıcısı ve tüm ilişkili kayıtları başarıyla silindi.";
         return RedirectToAction(nameof(KullaniciYonetimi), new { arama, durumFiltre, tipFiltre });
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ORGANİZASYON YÖNETİMİ
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // GET: /Admin/OrganizasyonYonetimi
+    [HttpGet]
+    public async Task<IActionResult> OrganizasyonYonetimi(int? fakulteId)
+    {
+        // Tüm aktif + pasif organizasyonları çek
+        var tumOrganizasyonlar = await _context.Organizasyons
+            .OrderBy(o => o.Adi)
+            .ToListAsync();
+
+        // Fakülteler: UstOrganizasyonId null olanlar
+        var fakulteler = tumOrganizasyonlar
+            .Where(o => o.UstOrganizasyonId == null)
+            .OrderBy(o => o.Adi)
+            .ToList();
+
+        // Seçili fakültenin bölümleri
+        List<Organizasyon> bolumler = new();
+        Organizasyon? secilenFakulte = null;
+        if (fakulteId.HasValue && fakulteId.Value > 0)
+        {
+            secilenFakulte = fakulteler.FirstOrDefault(f => f.Id == fakulteId.Value);
+            bolumler = tumOrganizasyonlar
+                .Where(o => o.UstOrganizasyonId == fakulteId.Value)
+                .OrderBy(o => o.Adi)
+                .ToList();
+        }
+
+        ViewBag.Fakulteler = fakulteler;
+        ViewBag.Bolumler = bolumler;
+        ViewBag.SecilenFakulteId = fakulteId;
+        ViewBag.SecilenFakulte = secilenFakulte;
+
+        return View();
+    }
+
+    // POST: /Admin/FakulteEkle
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> FakulteEkle(string adi, string? kodu)
+    {
+        if (string.IsNullOrWhiteSpace(adi))
+        {
+            TempData["Hata"] = "Fakülte adı boş olamaz.";
+            return RedirectToAction(nameof(OrganizasyonYonetimi));
+        }
+
+        adi = adi.Trim();
+        if (await _context.Organizasyons.AnyAsync(o => o.Adi.ToLower() == adi.ToLower() && o.UstOrganizasyonId == null))
+        {
+            TempData["Hata"] = $"'{adi}' adında bir fakülte/üst birim zaten mevcut.";
+            return RedirectToAction(nameof(OrganizasyonYonetimi));
+        }
+
+        var org = new Organizasyon
+        {
+            Adi = adi,
+            Kodu = string.IsNullOrWhiteSpace(kodu) ? null : kodu.Trim().ToUpper(),
+            Tipi = "Fakulte",   // DB CHECK kısıtı: sadece 'Fakulte' veya 'Bolum'
+            UstOrganizasyonId = null,
+            Durum = true
+        };
+
+        _context.Organizasyons.Add(org);
+        await _context.SaveChangesAsync();
+
+        TempData["Basari"] = $"'{org.Adi}' başarıyla eklendi.";
+        return RedirectToAction(nameof(OrganizasyonYonetimi));
+    }
+
+    // POST: /Admin/BolumEkle
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> BolumEkle(int fakulteId, string adi, string? kodu)
+    {
+        if (string.IsNullOrWhiteSpace(adi))
+        {
+            TempData["Hata"] = "Bölüm adı boş olamaz.";
+            return RedirectToAction(nameof(OrganizasyonYonetimi), new { fakulteId });
+        }
+
+        var fakulte = await _context.Organizasyons.FindAsync(fakulteId);
+        if (fakulte == null)
+        {
+            TempData["Hata"] = "Seçilen fakülte bulunamadı.";
+            return RedirectToAction(nameof(OrganizasyonYonetimi));
+        }
+
+        adi = adi.Trim();
+        if (await _context.Organizasyons.AnyAsync(o => o.Adi.ToLower() == adi.ToLower() && o.UstOrganizasyonId == fakulteId))
+        {
+            TempData["Hata"] = $"Bu fakültede '{adi}' adında bir bölüm zaten mevcut.";
+            return RedirectToAction(nameof(OrganizasyonYonetimi), new { fakulteId });
+        }
+
+        var org = new Organizasyon
+        {
+            Adi = adi,
+            Kodu = string.IsNullOrWhiteSpace(kodu) ? null : kodu.Trim().ToUpper(),
+            Tipi = "Bolum",   // DB CHECK kısıtı: sadece 'Fakulte' veya 'Bolum'
+            UstOrganizasyonId = fakulteId,
+            Durum = true
+        };
+
+        _context.Organizasyons.Add(org);
+        await _context.SaveChangesAsync();
+
+        TempData["Basari"] = $"'{org.Adi}' bölümü '{fakulte.Adi}' altına başarıyla eklendi.";
+        return RedirectToAction(nameof(OrganizasyonYonetimi), new { fakulteId });
+    }
+
+    // POST: /Admin/OrganizasyonSil
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> OrganizasyonSil(int id, int? geriDonFakulteId)
+    {
+        var org = await _context.Organizasyons
+            .Include(o => o.InverseUstOrganizasyon)
+            .Include(o => o.Ogrencis)
+            .Include(o => o.OgretimUyesis)
+            .Include(o => o.Ders)
+            .FirstOrDefaultAsync(o => o.Id == id);
+
+        if (org == null)
+        {
+            TempData["Hata"] = "Silinecek organizasyon bulunamadı.";
+            return RedirectToAction(nameof(OrganizasyonYonetimi), new { fakulteId = geriDonFakulteId });
+        }
+
+        // Fakülte ise altında bölüm var mı?
+        if (org.UstOrganizasyonId == null && org.InverseUstOrganizasyon.Any())
+        {
+            TempData["Hata"] = $"'{org.Adi}' fakültesine bağlı bölümler var. Önce bölümleri siliniz.";
+            return RedirectToAction(nameof(OrganizasyonYonetimi), new { fakulteId = geriDonFakulteId });
+        }
+
+        // Bağlı öğrenci/öğretim üyesi/ders var mı?
+        if (org.Ogrencis.Any())
+        {
+            TempData["Hata"] = $"'{org.Adi}' birimine kayıtlı {org.Ogrencis.Count} öğrenci bulunmaktadır. Önce öğrencileri başka birime aktarınız.";
+            return RedirectToAction(nameof(OrganizasyonYonetimi), new { fakulteId = geriDonFakulteId });
+        }
+        if (org.OgretimUyesis.Any())
+        {
+            TempData["Hata"] = $"'{org.Adi}' birimine bağlı {org.OgretimUyesis.Count} öğretim üyesi bulunmaktadır. Önce öğretim üyelerini başka birime aktarınız.";
+            return RedirectToAction(nameof(OrganizasyonYonetimi), new { fakulteId = geriDonFakulteId });
+        }
+        if (org.Ders.Any())
+        {
+            TempData["Hata"] = $"'{org.Adi}' birimine ait {org.Ders.Count} ders bulunmaktadır. Önce dersleri başka birime aktarınız.";
+            return RedirectToAction(nameof(OrganizasyonYonetimi), new { fakulteId = geriDonFakulteId });
+        }
+
+        var adi = org.Adi;
+        bool fakulteIdi = org.UstOrganizasyonId == null;
+
+        _context.Organizasyons.Remove(org);
+        await _context.SaveChangesAsync();
+
+        TempData["Basari"] = $"'{adi}' başarıyla silindi.";
+
+        // Fakülte silindiyse listeye dön, bölüm silindiyse aynı fakülte sayfasına dön
+        if (fakulteIdi)
+            return RedirectToAction(nameof(OrganizasyonYonetimi));
+        else
+            return RedirectToAction(nameof(OrganizasyonYonetimi), new { fakulteId = geriDonFakulteId });
+    }
 }
+
