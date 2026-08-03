@@ -218,12 +218,12 @@
             <div class="form-row">
                 <div class="form-group">
                     <label asp-for="Ad">Ad <span style="color:#ef4444">*</span></label>
-                    <input asp-for="Ad" class="form-control" placeholder="Ahmet" autocomplete="off" />
+                    <input asp-for="Ad" class="form-control" placeholder="Ahmet" autocomplete="off" pattern="^[a-pr-vy-zA-PR-VY-ZçÇğĞıİöÖşŞüÜ\s]+$" title="Sadece Türkçe harfler ve boşluk kullanılabilir. Rakam veya yabancı karakter yazılamaz." />
                     <span asp-validation-for="Ad" class="text-danger"></span>
                 </div>
                 <div class="form-group">
                     <label asp-for="Soyad">Soyad <span style="color:#ef4444">*</span></label>
-                    <input asp-for="Soyad" class="form-control" placeholder="Yılmaz" autocomplete="off" />
+                    <input asp-for="Soyad" class="form-control" placeholder="Yılmaz" autocomplete="off" pattern="^[a-pr-vy-zA-PR-VY-ZçÇğĞıİöÖşŞüÜ\s]+$" title="Sadece Türkçe harfler ve boşluk kullanılabilir. Rakam veya yabancı karakter yazılamaz." />
                     <span asp-validation-for="Soyad" class="text-danger"></span>
                 </div>
             </div>
@@ -428,5 +428,35 @@
                 bolumSelect.value = seciliBolum.Id;
             }
         }
+
+        // ── Ad ve Soyad alanlarına rakam ve yabancı karakter girişini engelleme ──
+        const nameInputs = document.querySelectorAll('#Ad, #Soyad');
+        const invalidCharRegex = /[^a-pr-vy-zA-PR-VY-ZçÇğĞıİöÖşŞüÜ\s]/;
+        const replaceRegex = /[^a-pr-vy-zA-PR-VY-ZçÇğĞıİöÖşŞüÜ\s]/g;
+
+        nameInputs.forEach(input => {
+            input.addEventListener('keypress', function(e) {
+                if (e.charCode !== 0) {
+                    const char = String.fromCharCode(e.charCode);
+                    if (invalidCharRegex.test(char)) {
+                        e.preventDefault();
+                    }
+                }
+            });
+
+            input.addEventListener('input', function() {
+                if (invalidCharRegex.test(this.value)) {
+                    this.value = this.value.replace(replaceRegex, '');
+                }
+            });
+
+            input.addEventListener('paste', function() {
+                setTimeout(() => {
+                    if (invalidCharRegex.test(this.value)) {
+                        this.value = this.value.replace(replaceRegex, '');
+                    }
+                }, 0);
+            });
+        });
     </script>
 }
