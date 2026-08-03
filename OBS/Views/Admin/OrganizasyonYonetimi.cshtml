@@ -333,7 +333,7 @@
         <div class="col-lg-5">
             <div class="panel-card">
                 <div class="panel-header">
-                    <span class="panel-title">🏛️ Fakülteler / Üst Birimler</span>
+                    <span class="panel-title">🏛️ Fakülteler</span>
                     <span class="cnt-badge">@fakulteler.Count</span>
                 </div>
 
@@ -342,7 +342,7 @@
                     {
                         <div class="empty-state">
                             <div class="icon">🏛️</div>
-                            <p>Henüz fakülte / üst birim eklenmemiş.</p>
+                            <p>Henüz fakülte eklenmemiş.</p>
                         </div>
                     }
                     else
@@ -370,7 +370,7 @@
                                     }
                                 </span>
                                 <span class="f-meta">
-                                    <span class="type-badge @tbClass">@f.Tipi</span>
+                                    <span class="type-badge @tbClass">@(f.Tipi == "Fakulte" ? "Fakülte" : f.Tipi)</span>
                                     <span class="dot @(f.Durum ? "aktif" : "pasif")" title="@(f.Durum ? "Aktif" : "Pasif")"></span>
                                 </span>
                             </a>
@@ -380,22 +380,15 @@
 
                 <!-- Fakülte Ekleme Formu -->
                 <div class="add-form-wrap">
-                    <div class="add-form-label">➕ Yeni Üst Birim Ekle</div>
+                    <div class="add-form-label">➕ Yeni Fakülte Ekle</div>
                     <form asp-action="FakulteEkle" asp-controller="Admin" method="post">
                         @Html.AntiForgeryToken()
                         <div class="d-flex flex-column gap-2">
                             <input type="text" name="adi" class="form-control form-control-sm"
-                                   placeholder="Birim adı (ör: Mühendislik Fakültesi)" required id="fakulteAdiInput" />
+                                   placeholder="Fakülte adı (ör: Mühendislik Fakültesi)" required id="fakulteAdiInput" />
                             <div class="d-flex gap-2">
                                 <input type="text" name="kodu" class="form-control form-control-sm"
                                        placeholder="Kod (ör: MF)" style="max-width:90px;" id="fakulteKoduInput" />
-                                <select name="tipi" class="form-select form-select-sm" id="fakulteTipiSelect">
-                                    <option value="Fakülte">Fakülte</option>
-                                    <option value="Yüksekokul">Yüksekokul</option>
-                                    <option value="Enstitü">Enstitü</option>
-                                    <option value="Meslek Yüksekokulu">Meslek Yüksekokulu</option>
-                                    <option value="Diğer">Diğer</option>
-                                </select>
                                 <button type="submit" class="btn btn-sm btn-primary px-3 fw-600" id="fakulteEkleBtn"
                                         style="white-space:nowrap; font-weight:600;">
                                     Ekle
@@ -478,7 +471,7 @@
                                         {
                                             <span class="kod-chip">@b.Kodu</span>
                                         }
-                                        <span class="type-badge @btClass">@b.Tipi</span>
+                                        <span class="type-badge @btClass">@(b.Tipi == "Bolum" ? "Bölüm" : b.Tipi)</span>
                                         <span class="dot @(b.Durum ? "aktif" : "pasif")"
                                               title="@(b.Durum ? "Aktif" : "Pasif")"></span>
                                     </span>
@@ -516,10 +509,121 @@
                             </div>
                         </form>
                     </div>
-
                 </div>
             }
         </div>
 
     </div>
 </div>
+
+@section Scripts {
+<script>
+(function () {
+    'use strict';
+
+    // ── Kod alanı ortak validasyon mantığı ──────────────────────────────────
+    // Kabul edilen format: sadece büyük/küçük harf, rakam, tire (-), max 10 karakter
+    const KOD_REGEX = /^[A-Za-z0-9\-]{1,10}$/;
+
+    /* Bir kod input'u için gerçek zamanlı doğrulama ve AJAX kontrol ayarlar. */
+    function baglaKodValidasyon(inputId, submitId) {
+        const input  = document.getElementById(inputId);
+        const submit = document.getElementById(submitId);
+        if (!input || !submit) return;
+
+        // Hint div oluştur
+        const hint = document.createElement('div');
+        hint.id = inputId + '_hint';
+        hint.style.cssText = 'font-size:0.75rem; margin-top:3px; min-height:18px;';
+        input.parentNode.insertBefore(hint, input.nextSibling);
+
+        let debounceTimer = null;
+        let gecerli = true;  // boşsa da geçerli (opsiyonel alan)
+
+        function durumGoster(durum, mesaj) {
+            // durum: 'ok' | 'hata' | 'kontrol' | 'temiz'
+            if (durum === 'ok') {
+                hint.style.color = '#059669';
+                hint.textContent = '✓ ' + mesaj;
+                input.style.borderColor = '#10b981';
+                gecerli = true;
+                submit.disabled = false;
+            } else if (durum === 'hata') {
+                hint.style.color = '#dc2626';
+                hint.textContent = '✗ ' + mesaj;
+                input.style.borderColor = '#ef4444';
+                gecerli = false;
+                submit.disabled = true;
+            } else if (durum === 'kontrol') {
+                hint.style.color = '#64748b';
+                hint.textContent = '⏳ Kontrol ediliyor…';
+                input.style.borderColor = '';
+                gecerli = false;
+                submit.disabled = true;
+            } else {
+                hint.textContent = '';
+                input.style.borderColor = '';
+                gecerli = true;
+                submit.disabled = false;
+            }
+        }
+
+        input.addEventListener('input', function () {
+            const val = this.value.trim();
+
+            // Boşsa opsiyonel — izin ver
+            if (val === '') {
+                durumGoster('temiz');
+                return;
+            }
+
+            // Format kontrolü (client-side)
+            if (!KOD_REGEX.test(val)) {
+                durumGoster('hata', 'Kod yalnızca harf, rakam ve tire içerebilir (max 10 karakter).');
+                clearTimeout(debounceTimer);
+                return;
+            }
+
+            // Uzunluk tamam, AJAX ile DB kontrolü
+            durumGoster('kontrol');
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(function () {
+                fetch('/Admin/KoduKontrol?kodu=' + encodeURIComponent(val))
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.kullanildi) {
+                            durumGoster('hata', '"' + val.toUpperCase() + '" kodu başka bir birimde kullanılıyor.');
+                        } else {
+                            durumGoster('ok', 'Bu kod kullanılabilir.');
+                        }
+                    })
+                    .catch(() => {
+                        // Ağ hatası — uyarı göster ama bloklamayalım
+                        hint.style.color = '#92400e';
+                        hint.textContent = '⚠ Kontrol edilemedi; devam edebilirsiniz.';
+                        input.style.borderColor = '#f59e0b';
+                        gecerli = true;
+                        submit.disabled = false;
+                    });
+            }, 450); // 450ms debounce
+        });
+
+        // Form gönderiminde son bir kontrol
+        input.closest('form').addEventListener('submit', function (e) {
+            const val = input.value.trim();
+            if (val !== '' && !gecerli) {
+                e.preventDefault();
+                durumGoster('hata', 'Lütfen geçerli ve kullanılabilir bir kod girin.');
+            }
+        });
+    }
+
+    // Fakülte formu
+    baglaKodValidasyon('fakulteKoduInput', 'fakulteEkleBtn');
+
+    // Bölüm formu (sayfada varsa)
+    baglaKodValidasyon('bolumKoduInput', 'bolumEkleBtn');
+
+})();
+</script>
+}

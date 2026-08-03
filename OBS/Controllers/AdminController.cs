@@ -868,23 +868,47 @@ public class AdminController : Controller
         adi = adi.Trim();
         if (await _context.Organizasyons.AnyAsync(o => o.Adi.ToLower() == adi.ToLower() && o.UstOrganizasyonId == null))
         {
-            TempData["Hata"] = $"'{adi}' adında bir fakülte/üst birim zaten mevcut.";
+            TempData["Hata"] = $"'{adi}' adında bir fakülte zaten mevcut.";
             return RedirectToAction(nameof(OrganizasyonYonetimi));
+        }
+
+        // Kodu uniqueness kontrolü
+        if (!string.IsNullOrWhiteSpace(kodu))
+        {
+            var koduTemiz = kodu.Trim().ToUpper();
+            if (await _context.Organizasyons.AnyAsync(o => o.Kodu == koduTemiz))
+            {
+                TempData["Hata"] = $"'{koduTemiz}' kodu başka bir birim tarafından kullanılmaktadır. Lütfen farklı bir kod girin.";
+                return RedirectToAction(nameof(OrganizasyonYonetimi));
+            }
         }
 
         var org = new Organizasyon
         {
             Adi = adi,
             Kodu = string.IsNullOrWhiteSpace(kodu) ? null : kodu.Trim().ToUpper(),
-            Tipi = "Fakulte",   // DB CHECK kısıtı: sadece 'Fakulte' veya 'Bolum'
+            Tipi = "Fakulte",
             UstOrganizasyonId = null,
             Durum = true
         };
 
-        _context.Organizasyons.Add(org);
-        await _context.SaveChangesAsync();
+        try
+        {
+            _context.Organizasyons.Add(org);
+            await _context.SaveChangesAsync();
+            TempData["Basari"] = $"'{org.Adi}' başarıyla eklendi.";
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+            when (ex.InnerException?.Message.Contains("UQ_Organizasyon_Kodu") == true
+               || ex.InnerException?.Message.Contains("unique") == true)
+        {
+            TempData["Hata"] = "Bu kod başka bir birim tarafından kullanılmaktadır. Lütfen farklı bir kod girin.";
+        }
+        catch (Exception)
+        {
+            TempData["Hata"] = "Kayıt sırasında beklenmedik bir hata oluştu. Lütfen tekrar deneyin.";
+        }
 
-        TempData["Basari"] = $"'{org.Adi}' başarıyla eklendi.";
         return RedirectToAction(nameof(OrganizasyonYonetimi));
     }
 
@@ -913,20 +937,60 @@ public class AdminController : Controller
             return RedirectToAction(nameof(OrganizasyonYonetimi), new { fakulteId });
         }
 
+        // Kodu uniqueness kontrolü
+        if (!string.IsNullOrWhiteSpace(kodu))
+        {
+            var koduTemiz = kodu.Trim().ToUpper();
+            if (await _context.Organizasyons.AnyAsync(o => o.Kodu == koduTemiz))
+            {
+                TempData["Hata"] = $"'{koduTemiz}' kodu başka bir birim tarafından kullanılmaktadır. Lütfen farklı bir kod girin.";
+                return RedirectToAction(nameof(OrganizasyonYonetimi), new { fakulteId });
+            }
+        }
+
         var org = new Organizasyon
         {
             Adi = adi,
             Kodu = string.IsNullOrWhiteSpace(kodu) ? null : kodu.Trim().ToUpper(),
-            Tipi = "Bolum",   // DB CHECK kısıtı: sadece 'Fakulte' veya 'Bolum'
+            Tipi = "Bolum",
             UstOrganizasyonId = fakulteId,
             Durum = true
         };
 
-        _context.Organizasyons.Add(org);
-        await _context.SaveChangesAsync();
+        try
+        {
+            _context.Organizasyons.Add(org);
+            await _context.SaveChangesAsync();
+            TempData["Basari"] = $"'{org.Adi}' bölümü '{fakulte.Adi}' altına başarıyla eklendi.";
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+            when (ex.InnerException?.Message.Contains("UQ_Organizasyon_Kodu") == true
+               || ex.InnerException?.Message.Contains("unique") == true)
+        {
+            TempData["Hata"] = "Bu kod başka bir birim tarafından kullanılmaktadır. Lütfen farklı bir kod girin.";
+        }
+        catch (Exception)
+        {
+            TempData["Hata"] = "Kayıt sırasında beklenmedik bir hata oluştu. Lütfen tekrar deneyin.";
+        }
 
-        TempData["Basari"] = $"'{org.Adi}' bölümü '{fakulte.Adi}' altına başarıyla eklendi.";
         return RedirectToAction(nameof(OrganizasyonYonetimi), new { fakulteId });
+    }
+
+    // GET: /Admin/KoduKontrol  (AJAX)
+    [HttpGet]
+    public async Task<IActionResult> KoduKontrol(string kodu, int? mevcutId)
+    {
+        if (string.IsNullOrWhiteSpace(kodu))
+            return Json(new { kullanildi = false });
+
+        kodu = kodu.Trim().ToUpper();
+        var sorgu = _context.Organizasyons.Where(o => o.Kodu == kodu);
+        if (mevcutId.HasValue)
+            sorgu = sorgu.Where(o => o.Id != mevcutId.Value);
+
+        var kullanildi = await sorgu.AnyAsync();
+        return Json(new { kullanildi });
     }
 
     // POST: /Admin/OrganizasyonSil
