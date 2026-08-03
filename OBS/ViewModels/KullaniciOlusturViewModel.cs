@@ -6,10 +6,12 @@ public class KullaniciOlusturViewModel
 {
     // ── Kullanıcı Temel Bilgileri ───────────────────────────
     [Required(ErrorMessage = "Ad zorunludur.")]
+    [RegularExpression(@"^[a-pr-vy-zA-PR-VY-ZçÇğĞıİöÖşŞüÜ\s]+$", ErrorMessage = "Ad alanına rakam veya yabancı karakter yazılamaz. Sadece Türkçe harfler ve boşluk kullanılabilir.")]
     [MaxLength(100)]
     public string Ad { get; set; } = null!;
 
     [Required(ErrorMessage = "Soyad zorunludur.")]
+    [RegularExpression(@"^[a-pr-vy-zA-PR-VY-ZçÇğĞıİöÖşŞüÜ\s]+$", ErrorMessage = "Soyad alanına rakam veya yabancı karakter yazılamaz. Sadece Türkçe harfler ve boşluk kullanılabilir.")]
     [MaxLength(100)]
     public string Soyad { get; set; } = null!;
 

@@ -94,8 +94,8 @@ public class AdminController : Controller
         // 1) Kullanıcı kaydı oluştur
         var kullanici = new Kullanici
         {
-            Ad                   = model.Ad,
-            Soyad                = model.Soyad,
+            Ad                   = model.Ad.Trim(),
+            Soyad                = model.Soyad.Trim(),
             Eposta               = model.Eposta,
             Telefon              = model.Telefon,
             SifreHash            = null,  // şifre oluşturma maili ile belirlenecek
