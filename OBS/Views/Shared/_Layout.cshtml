@@ -8,11 +8,26 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/OBS.styles.css" asp-append-version="true" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, button, input, select, textarea, .nav-link, table, h1, h2, h3, h4, h5, h6 {
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 0.96rem;
+            letter-spacing: -0.01em;
+        }
+    </style>
 </head>
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
+@{
+    var isAdmin = (await AuthorizationService.AuthorizeAsync(User, null, new Microsoft.AspNetCore.Authorization.Infrastructure.RolesAuthorizationRequirement(new[] { "Admin" }))).Succeeded;
+}
 <body>
     @await Html.PartialAsync("_AdminNavbar")
 
-    <div class="container">
+    <div class="@(isAdmin ? "ms-auto" : "container")" style="@(isAdmin ? "margin-left: 250px !important; padding: 20px;" : "")">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
