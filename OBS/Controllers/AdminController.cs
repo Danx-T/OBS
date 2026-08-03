@@ -1049,5 +1049,153 @@ public class AdminController : Controller
         else
             return RedirectToAction(nameof(OrganizasyonYonetimi), new { fakulteId = geriDonFakulteId });
     }
+
+    // =========================================================================
+    // 📅 DÖNEM YÖNETİMİ
+    // =========================================================================
+
+    // GET: /Admin/DonemYonetimi
+    public async Task<IActionResult> DonemYonetimi()
+    {
+        var donemler = await _context.Donems
+            .Include(d => d.AcilanDers)
+            .OrderByDescending(d => d.AkademikYil)
+            .ThenByDescending(d => d.BaslangicTarihi)
+            .ToListAsync();
+
+        return View(donemler);
+    }
+
+    // POST: /Admin/DonemEkle
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DonemEkle(
+        string akademikYil,
+        string donem1,
+        DateOnly baslangicTarihi,
+        DateOnly bitisTarihi,
+        DateTime dersKaydiBaslangic,
+        DateTime dersKaydiBitis)
+    {
+        if (string.IsNullOrWhiteSpace(akademikYil) || string.IsNullOrWhiteSpace(donem1))
+        {
+            TempData["Hata"] = "Akademik Yıl ve Dönem alanları boş bırakılamaz.";
+            return RedirectToAction(nameof(DonemYonetimi));
+        }
+
+        akademikYil = akademikYil.Trim();
+        donem1 = donem1.Trim();
+        if (donem1.Equals("Güz", StringComparison.OrdinalIgnoreCase))
+            donem1 = "Guz";
+        else if (donem1.Equals("Yaz Okulu", StringComparison.OrdinalIgnoreCase))
+            donem1 = "Yaz";
+
+        if (baslangicTarihi >= bitisTarihi)
+        {
+            TempData["Hata"] = "Dönem başlangıç tarihi bitiş tarihinden sonra veya eşit olamaz.";
+            return RedirectToAction(nameof(DonemYonetimi));
+        }
+
+        if (dersKaydiBaslangic >= dersKaydiBitis)
+        {
+            TempData["Hata"] = "Ders kaydı başlangıç tarihi bitiş tarihinden sonra veya eşit olamaz.";
+            return RedirectToAction(nameof(DonemYonetimi));
+        }
+
+        if (await _context.Donems.AnyAsync(d => d.AkademikYil == akademikYil && d.Donem1 == donem1))
+        {
+            string donemGoster = donem1 == "Guz" ? "Güz" : donem1;
+            TempData["Hata"] = $"'{akademikYil} - {donemGoster}' akademik dönemi sistemde zaten mevcut.";
+            return RedirectToAction(nameof(DonemYonetimi));
+        }
+
+        var donem = new Donem
+        {
+            AkademikYil = akademikYil,
+            Donem1 = donem1,
+            BaslangicTarihi = baslangicTarihi,
+            BitisTarihi = bitisTarihi,
+            DersKaydiBaslangic = dersKaydiBaslangic,
+            DersKaydiBitis = dersKaydiBitis
+        };
+
+        try
+        {
+            _context.Donems.Add(donem);
+            await _context.SaveChangesAsync();
+            string donemGoster = donem.Donem1 == "Guz" ? "Güz" : donem.Donem1;
+            TempData["Basari"] = $"'{donem.AkademikYil} - {donemGoster}' akademik dönemi başarıyla oluşturuldu.";
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+            when (ex.InnerException?.Message.Contains("UQ_Donem_Yil_Donem") == true
+               || ex.InnerException?.Message.Contains("unique") == true)
+        {
+            string donemGoster = donem1 == "Guz" ? "Güz" : donem1;
+            TempData["Hata"] = $"'{akademikYil} - {donemGoster}' akademik dönemi sistemde zaten tanımlı.";
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+            when (ex.InnerException?.Message.Contains("CK_Donem_Donem") == true)
+        {
+            TempData["Hata"] = $"Geçersiz dönem adı ('{donem1}'). Lütfen Güz, Bahar veya Yaz olarak seçin.";
+        }
+        catch (Exception)
+        {
+            TempData["Hata"] = "Dönem kaydı sırasında beklenmedik bir hata oluştu. Lütfen tekrar deneyin.";
+        }
+
+        return RedirectToAction(nameof(DonemYonetimi));
+    }
+
+    // POST: /Admin/DonemSil
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DonemSil(int id)
+    {
+        var donem = await _context.Donems
+            .Include(d => d.AcilanDers)
+            .FirstOrDefaultAsync(d => d.Id == id);
+
+        if (donem == null)
+        {
+            TempData["Hata"] = "Silinmek istenen dönem bulunamadı.";
+            return RedirectToAction(nameof(DonemYonetimi));
+        }
+
+        string donemGoster = donem.Donem1 == "Guz" ? "Güz" : donem.Donem1;
+        if (donem.AcilanDers.Any())
+        {
+            TempData["Hata"] = $"'{donem.AkademikYil} - {donemGoster}' dönemine ait {donem.AcilanDers.Count} açılan ders bulunmaktadır. Önce açılan dersleri silmeniz veya aktarmanız gerekmektedir.";
+            return RedirectToAction(nameof(DonemYonetimi));
+        }
+
+        var ad = $"{donem.AkademikYil} - {donemGoster}";
+        _context.Donems.Remove(donem);
+        await _context.SaveChangesAsync();
+
+        TempData["Basari"] = $"'{ad}' akademik dönemi başarıyla silindi.";
+        return RedirectToAction(nameof(DonemYonetimi));
+    }
+
+    // GET: /Admin/DonemKontrol (AJAX)
+    [HttpGet]
+    public async Task<IActionResult> DonemKontrol(string akademikYil, string donem1, int? mevcutId)
+    {
+        if (string.IsNullOrWhiteSpace(akademikYil) || string.IsNullOrWhiteSpace(donem1))
+            return Json(new { kullanildi = false });
+
+        akademikYil = akademikYil.Trim();
+        donem1 = donem1.Trim();
+        if (donem1.Equals("Güz", StringComparison.OrdinalIgnoreCase))
+            donem1 = "Guz";
+        else if (donem1.Equals("Yaz Okulu", StringComparison.OrdinalIgnoreCase))
+            donem1 = "Yaz";
+
+        var sorgu = _context.Donems.Where(d => d.AkademikYil == akademikYil && d.Donem1 == donem1);
+        if (mevcutId.HasValue)
+            sorgu = sorgu.Where(d => d.Id != mevcutId.Value);
+
+        var kullanildi = await sorgu.AnyAsync();
+        return Json(new { kullanildi });
+    }
 }
 
