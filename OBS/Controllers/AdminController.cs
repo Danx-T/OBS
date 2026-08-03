@@ -521,7 +521,7 @@ public class AdminController : Controller
                 AdSoyad = $"{k.Ad} {k.Soyad}",
                 Eposta = k.Eposta,
                 BolumAdi = ogrenci?.Organizasyon?.Adi ?? hoca?.Organizasyon?.Adi ?? "-",
-                KullaniciTipi = ogrenci != null ? "Öğrenci" : hoca != null ? "Öğretim Üyesi" : "Yönetici / Personel",
+                KullaniciTipi = ogrenci != null ? "Öğrenci" : hoca != null ? "Öğretim Üyesi" : "Personel",
                 Roller = k.KullaniciRols.Select(kr => kr.Rol.RolAdi).ToList(),
                 RolIdler = k.KullaniciRols.Select(kr => kr.RolId).ToList(),
                 DogrudanYetkiler = k.KullaniciYetkiKullanicis.Select(ky => ky.Yetki.YetkiKodu).ToList(),
@@ -607,5 +607,211 @@ public class AdminController : Controller
         await _context.SaveChangesAsync();
         TempData["Basari"] = $"{kullanici.Ad} {kullanici.Soyad} kullanıcısının rol ve yetkileri başarıyla güncellendi!";
         return RedirectToAction(nameof(KullaniciYetkilendirme), new { arama = model.Arama, bolumId = model.BolumId });
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // KULLANICI YÖNETİM PANELİ
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // GET: /Admin/KullaniciYonetimi
+    [HttpGet]
+    public async Task<IActionResult> KullaniciYonetimi(string? arama, string? durumFiltre, string? tipFiltre)
+    {
+        var query = _context.Kullanicis
+            .Include(k => k.KullaniciRols.Where(kr => kr.AktiflikDurumu))
+                .ThenInclude(kr => kr.Rol)
+            .Include(k => k.KullaniciYetkiKullanicis)
+                .ThenInclude(ky => ky.Yetki)
+            .Include(k => k.Ogrenci)
+                .ThenInclude(o => o!.Organizasyon)
+            .Include(k => k.OgretimUyesi)
+                .ThenInclude(ou => ou!.Organizasyon)
+            .AsQueryable();
+
+        // Arama filtresi
+        if (!string.IsNullOrWhiteSpace(arama))
+        {
+            var aramaLower = arama.Trim().ToLower();
+            query = query.Where(k => k.Ad.ToLower().Contains(aramaLower) ||
+                                     k.Soyad.ToLower().Contains(aramaLower) ||
+                                     k.Eposta.ToLower().Contains(aramaLower));
+        }
+
+        // Durum filtresi
+        if (durumFiltre == "aktif")
+            query = query.Where(k => k.AktiflikDurumu);
+        else if (durumFiltre == "pasif")
+            query = query.Where(k => !k.AktiflikDurumu);
+
+        var kullanicilar = await query.OrderBy(k => k.Ad).ThenBy(k => k.Soyad).ToListAsync();
+
+        var liste = kullanicilar.Select(k =>
+        {
+            var tip = k.Ogrenci != null ? "Öğrenci"
+                    : k.OgretimUyesi != null ? "Öğretim Üyesi"
+                    : "Personel";
+
+            var bolum = k.Ogrenci?.Organizasyon?.Adi
+                     ?? k.OgretimUyesi?.Organizasyon?.Adi;
+
+            return new OBS.ViewModels.KullaniciYonetimListeModel
+            {
+                Id                    = k.Id,
+                AdSoyad               = $"{k.Ad} {k.Soyad}",
+                Eposta                = k.Eposta,
+                Telefon               = k.Telefon,
+                AktiflikDurumu        = k.AktiflikDurumu,
+                KullaniciTipi         = tip,
+                BolumAdi              = bolum,
+                OlusturmaTarihi       = k.OlusturmaTarihi,
+                SonGuncellenmeTarihi  = k.SonGuncellenmeTarihi,
+                IkiFaktorluDogrulama  = k.IkiFaktorluDogrulama,
+                SifreBelirlenmisMi    = !string.IsNullOrEmpty(k.SifreHash),
+                Roller                = k.KullaniciRols.Select(kr => kr.Rol.RolAdi).ToList(),
+                Yetkiler              = k.KullaniciYetkiKullanicis.Select(ky => ky.Yetki.YetkiKodu).ToList()
+            };
+        }).ToList();
+
+        // Tip filtresi (client-side kolayca yapılabilir ama server-side da destekleyelim)
+        if (!string.IsNullOrWhiteSpace(tipFiltre))
+        {
+            liste = tipFiltre switch
+            {
+                "Ogrenci"       => liste.Where(x => x.KullaniciTipi == "Öğrenci").ToList(),
+                "OgretimUyesi"  => liste.Where(x => x.KullaniciTipi == "Öğretim Üyesi").ToList(),
+                "Diger"         => liste.Where(x => x.KullaniciTipi == "Personel").ToList(),
+                _               => liste
+            };
+        }
+
+        var model = new OBS.ViewModels.KullaniciYonetimViewModel
+        {
+            Kullanicilar  = liste,
+            Arama         = arama,
+            DurumFiltre   = durumFiltre,
+            TipFiltre     = tipFiltre
+        };
+
+        return View(model);
+    }
+
+    // POST: /Admin/KullaniciAktiflikToggle
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> KullaniciAktiflikToggle(int id, string? arama, string? durumFiltre, string? tipFiltre)
+    {
+        // Kendi hesabını pasife alamaz
+        if (int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out int mevcutId)
+            && mevcutId == id)
+        {
+            TempData["Hata"] = "Kendi hesabınızın aktiflik durumunu değiştiremezsiniz!";
+            return RedirectToAction(nameof(KullaniciYonetimi), new { arama, durumFiltre, tipFiltre });
+        }
+
+        var kullanici = await _context.Kullanicis.FindAsync(id);
+        if (kullanici == null)
+        {
+            TempData["Hata"] = "Kullanıcı bulunamadı.";
+            return RedirectToAction(nameof(KullaniciYonetimi), new { arama, durumFiltre, tipFiltre });
+        }
+
+        // Tek admin kontrolü: pasife geçirilecekse ve admin rolündeyse başka admin var mı?
+        if (kullanici.AktiflikDurumu)
+        {
+            var adminRolId = await _context.Rols
+                .Where(r => r.RolAdi == "Admin")
+                .Select(r => r.Id)
+                .FirstOrDefaultAsync();
+
+            if (adminRolId > 0)
+            {
+                var adminKullaniciBuKisi = await _context.KullaniciRols
+                    .AnyAsync(kr => kr.KullaniciId == id && kr.RolId == adminRolId && kr.AktiflikDurumu);
+
+                if (adminKullaniciBuKisi)
+                {
+                    var diger_aktif_admin = await _context.KullaniciRols
+                        .CountAsync(kr => kr.RolId == adminRolId && kr.AktiflikDurumu && kr.KullaniciId != id
+                                         && kr.Kullanici.AktiflikDurumu);
+                    if (diger_aktif_admin == 0)
+                    {
+                        TempData["Hata"] = "Sistemde tek aktif admin bu kullanıcıdır. Önce başka bir kullanıcıya Admin rolü atayınız.";
+                        return RedirectToAction(nameof(KullaniciYonetimi), new { arama, durumFiltre, tipFiltre });
+                    }
+                }
+            }
+        }
+
+        kullanici.AktiflikDurumu = !kullanici.AktiflikDurumu;
+        kullanici.SonGuncellenmeTarihi = DateTime.Now;
+        await _context.SaveChangesAsync();
+
+        var durum = kullanici.AktiflikDurumu ? "aktif" : "pasif";
+        TempData["Basari"] = $"{kullanici.Ad} {kullanici.Soyad} kullanıcısı başarıyla {durum} yapıldı.";
+        return RedirectToAction(nameof(KullaniciYonetimi), new { arama, durumFiltre, tipFiltre });
+    }
+
+    // POST: /Admin/KullaniciSil
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> KullaniciSil(int id, string? arama, string? durumFiltre, string? tipFiltre)
+    {
+        // Kendi hesabını silemez
+        if (int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out int mevcutId)
+            && mevcutId == id)
+        {
+            TempData["Hata"] = "Kendi hesabınızı silemezsiniz!";
+            return RedirectToAction(nameof(KullaniciYonetimi), new { arama, durumFiltre, tipFiltre });
+        }
+
+        var kullanici = await _context.Kullanicis
+            .Include(k => k.KullaniciRols)
+            .Include(k => k.KullaniciYetkiKullanicis)
+            .Include(k => k.KullaniciYetkiIslemYapanKullanicis)
+            .Include(k => k.DenetimKaydis)
+            .Include(k => k.Ogrenci)
+            .Include(k => k.OgretimUyesi)
+            .FirstOrDefaultAsync(k => k.Id == id);
+
+        if (kullanici == null)
+        {
+            TempData["Hata"] = "Silinecek kullanıcı bulunamadı.";
+            return RedirectToAction(nameof(KullaniciYonetimi), new { arama, durumFiltre, tipFiltre });
+        }
+
+        // Tek admin kontrolü
+        var adminRolId = await _context.Rols
+            .Where(r => r.RolAdi == "Admin")
+            .Select(r => r.Id)
+            .FirstOrDefaultAsync();
+
+        if (adminRolId > 0 && kullanici.KullaniciRols.Any(kr => kr.RolId == adminRolId))
+        {
+            var digerAdminSayisi = await _context.KullaniciRols
+                .CountAsync(kr => kr.RolId == adminRolId && kr.KullaniciId != id);
+            if (digerAdminSayisi == 0)
+            {
+                TempData["Hata"] = "Sistemdeki son admin kullanıcısı silinemez! Önce başka bir kullanıcıya Admin rolü atayınız.";
+                return RedirectToAction(nameof(KullaniciYonetimi), new { arama, durumFiltre, tipFiltre });
+            }
+        }
+
+        var adSoyad = $"{kullanici.Ad} {kullanici.Soyad}";
+
+        // İlişkili veriler (cascade olmayan)
+        _context.KullaniciRols.RemoveRange(kullanici.KullaniciRols);
+        _context.KullaniciYetkis.RemoveRange(kullanici.KullaniciYetkiKullanicis);
+
+        // Ogrenci / OgretimUyesi
+        if (kullanici.Ogrenci != null)
+            _context.Ogrencis.Remove(kullanici.Ogrenci);
+        if (kullanici.OgretimUyesi != null)
+            _context.OgretimUyesis.Remove(kullanici.OgretimUyesi);
+
+        _context.Kullanicis.Remove(kullanici);
+        await _context.SaveChangesAsync();
+
+        TempData["Basari"] = $"'{adSoyad}' kullanıcısı ve tüm ilişkili kayıtları başarıyla silindi.";
+        return RedirectToAction(nameof(KullaniciYonetimi), new { arama, durumFiltre, tipFiltre });
     }
 }
