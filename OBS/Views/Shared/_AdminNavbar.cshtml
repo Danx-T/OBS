@@ -17,6 +17,12 @@
                     </a>
                 </li>
                 <li>
+                    <a asp-controller="Admin" asp-action="KullaniciYonetimi"
+                       class="admin-nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "KullaniciYonetimi" ? "active" : "")">
+                        <span>👥</span> Kullanıcı Yönetimi
+                    </a>
+                </li>
+                <li>
                     <a asp-controller="Admin" asp-action="DanismanAtama"
                        class="admin-nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "DanismanAtama" ? "active" : "")">
                         <span>👨‍🏫</span> Danışman Atama
