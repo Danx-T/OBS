@@ -1197,5 +1197,195 @@ public class AdminController : Controller
         var kullanildi = await sorgu.AnyAsync();
         return Json(new { kullanildi });
     }
+
+    // =========================================================================
+    // 📚 DERS KATALOĞU & HAVUZ YÖNETİMİ
+    // =========================================================================
+
+    // GET: /Admin/DersYonetimi
+    public async Task<IActionResult> DersYonetimi(int? bolumId, string? arama)
+    {
+        // Bölümleri (UstOrganizasyonId != null olan birimleri) getir
+        var bolumler = await _context.Organizasyons
+            .Where(o => o.Durum && o.UstOrganizasyonId != null)
+            .OrderBy(o => o.Adi)
+            .ToListAsync();
+
+        var query = _context.Ders
+            .Include(d => d.Organizasyon)
+            .Include(d => d.AcilanDers)
+            .AsQueryable();
+
+        if (bolumId.HasValue && bolumId.Value > 0)
+        {
+            query = query.Where(d => d.OrganizasyonId == bolumId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(arama))
+        {
+            var a = arama.Trim().ToLower();
+            query = query.Where(d => d.DersKodu.ToLower().Contains(a) || d.DersAdi.ToLower().Contains(a));
+        }
+
+        var dersler = await query
+            .OrderBy(d => d.Organizasyon.Adi)
+            .ThenBy(d => d.DersKodu)
+            .ToListAsync();
+
+        ViewBag.Bolumler = bolumler;
+        ViewBag.SeciliBolumId = bolumId;
+        ViewBag.Arama = arama;
+
+        return View(dersler);
+    }
+
+    // POST: /Admin/DersEkle
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DersEkle(
+        int organizasyonId,
+        string dersKodu,
+        string dersAdi,
+        decimal kredi,
+        decimal akts,
+        int teorik,
+        int uygulama,
+        string dersTuru,
+        int? geriDonBolumId)
+    {
+        if (organizasyonId <= 0 || string.IsNullOrWhiteSpace(dersKodu) || string.IsNullOrWhiteSpace(dersAdi))
+        {
+            TempData["Hata"] = "Bölüm, Ders Kodu ve Ders Adı alanları zorunludur.";
+            return RedirectToAction(nameof(DersYonetimi), new { bolumId = geriDonBolumId });
+        }
+
+        dersKodu = dersKodu.Trim().ToUpper();
+        dersAdi = dersAdi.Trim();
+        dersTuru = (dersTuru ?? "Zorunlu").Trim();
+
+        // ASCII normalizasyonu (DB CHECK kısıtları için)
+        if (dersTuru.Equals("Seçmeli", StringComparison.OrdinalIgnoreCase))
+            dersTuru = "Secmeli";
+        else if (dersTuru.Equals("Zorunlu", StringComparison.OrdinalIgnoreCase))
+            dersTuru = "Zorunlu";
+
+        if (kredi < 0 || akts < 1 || teorik < 0 || uygulama < 0)
+        {
+            TempData["Hata"] = "Kredi, AKTS, Teorik ve Uygulama saatleri geçerli birer sayı olmalıdır.";
+            return RedirectToAction(nameof(DersYonetimi), new { bolumId = geriDonBolumId });
+        }
+
+        if (await _context.Ders.AnyAsync(d => d.DersKodu == dersKodu))
+        {
+            TempData["Hata"] = $"'{dersKodu}' ders kodu sistemde başka bir ders tarafından kullanılmaktadır.";
+            return RedirectToAction(nameof(DersYonetimi), new { bolumId = geriDonBolumId });
+        }
+
+        var der = new Der
+        {
+            OrganizasyonId = organizasyonId,
+            DersKodu = dersKodu,
+            DersAdi = dersAdi,
+            Kredi = kredi,
+            Akts = akts,
+            Teorik = teorik,
+            Uygulama = uygulama,
+            DersTuru = dersTuru,
+            AktiflikDurumu = true
+        };
+
+        try
+        {
+            _context.Ders.Add(der);
+            await _context.SaveChangesAsync();
+            string turGoster = der.DersTuru == "Secmeli" ? "Seçmeli" : der.DersTuru;
+            TempData["Basari"] = $"'{der.DersKodu} - {der.DersAdi}' ({turGoster}) başarıyla ders kataloğuna eklendi.";
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+            when (ex.InnerException?.Message.Contains("UQ_Ders_DersKodu") == true
+               || ex.InnerException?.Message.Contains("unique") == true)
+        {
+            TempData["Hata"] = $"'{dersKodu}' ders kodu sistemde zaten mevcut.";
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+            when (ex.InnerException?.Message.Contains("CK_Ders_DersTuru") == true)
+        {
+            TempData["Hata"] = $"Geçersiz ders türü ('{dersTuru}'). Lütfen Zorunlu veya Seçmeli seçiniz.";
+        }
+        catch (Exception)
+        {
+            TempData["Hata"] = "Ders kaydı sırasında beklenmedik bir hata oluştu. Lütfen bilgileri kontrol edip tekrar deneyin.";
+        }
+
+        return RedirectToAction(nameof(DersYonetimi), new { bolumId = geriDonBolumId });
+    }
+
+    // POST: /Admin/DersDurumDegistir
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DersDurumDegistir(int id, int? geriDonBolumId)
+    {
+        var der = await _context.Ders.FindAsync(id);
+        if (der == null)
+        {
+            TempData["Hata"] = "Ders bulunamadı.";
+            return RedirectToAction(nameof(DersYonetimi), new { bolumId = geriDonBolumId });
+        }
+
+        der.AktiflikDurumu = !der.AktiflikDurumu;
+        await _context.SaveChangesAsync();
+
+        string durumMetin = der.AktiflikDurumu ? "Aktif" : "Pasif";
+        TempData["Basari"] = $"'{der.DersKodu}' kodlu dersin durumu {durumMetin} yapıldı.";
+
+        return RedirectToAction(nameof(DersYonetimi), new { bolumId = geriDonBolumId });
+    }
+
+    // POST: /Admin/DersSil
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DersSil(int id, int? geriDonBolumId)
+    {
+        var der = await _context.Ders
+            .Include(d => d.AcilanDers)
+            .FirstOrDefaultAsync(d => d.Id == id);
+
+        if (der == null)
+        {
+            TempData["Hata"] = "Silinmek istenen ders bulunamadı.";
+            return RedirectToAction(nameof(DersYonetimi), new { bolumId = geriDonBolumId });
+        }
+
+        if (der.AcilanDers.Any())
+        {
+            TempData["Hata"] = $"'{der.DersKodu} - {der.DersAdi}' dersine ait {der.AcilanDers.Count} adet açılan dönem dersi bulunmaktadır. Bu nedenle ders silinemez; dilerseniz durumu 'Pasif' yapabilirsiniz.";
+            return RedirectToAction(nameof(DersYonetimi), new { bolumId = geriDonBolumId });
+        }
+
+        var k = der.DersKodu;
+        var a = der.DersAdi;
+        _context.Ders.Remove(der);
+        await _context.SaveChangesAsync();
+
+        TempData["Basari"] = $"'{k} - {a}' kataloğundan silindi.";
+        return RedirectToAction(nameof(DersYonetimi), new { bolumId = geriDonBolumId });
+    }
+
+    // GET: /Admin/DersKoduKontrol (AJAX)
+    [HttpGet]
+    public async Task<IActionResult> DersKoduKontrol(string dersKodu, int? mevcutId)
+    {
+        if (string.IsNullOrWhiteSpace(dersKodu))
+            return Json(new { kullanildi = false });
+
+        dersKodu = dersKodu.Trim().ToUpper();
+
+        var sorgu = _context.Ders.Where(d => d.DersKodu == dersKodu);
+        if (mevcutId.HasValue)
+            sorgu = sorgu.Where(d => d.Id != mevcutId.Value);
+
+        var kullanildi = await sorgu.AnyAsync();
+        return Json(new { kullanildi });
+    }
 }
 
