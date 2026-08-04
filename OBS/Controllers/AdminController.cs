@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using OBS.Models;
 using OBS.Services;
 using OBS.ViewModels;
+using System.Globalization;
 
 namespace OBS.Controllers;
 
@@ -1203,22 +1204,38 @@ public class AdminController : Controller
     // =========================================================================
 
     // GET: /Admin/DersYonetimi
-    public async Task<IActionResult> DersYonetimi(int? bolumId, string? arama)
+    public async Task<IActionResult> DersYonetimi(int? fakulteId, int? bolumId, string? arama)
     {
-        // Bölümleri (UstOrganizasyonId != null olan birimleri) getir
+        // Fakülteleri (UstOrganizasyonId == null olanlar) ve Bölümleri getir
+        var fakulteler = await _context.Organizasyons
+            .Where(o => o.Durum && o.UstOrganizasyonId == null)
+            .OrderBy(o => o.Adi)
+            .ToListAsync();
+
         var bolumler = await _context.Organizasyons
             .Where(o => o.Durum && o.UstOrganizasyonId != null)
             .OrderBy(o => o.Adi)
             .ToListAsync();
 
+        // Ön koşul ders seçimi için tüm aktif dersleri getir
+        var tumDersler = await _context.Ders
+            .Where(d => d.AktiflikDurumu)
+            .OrderBy(d => d.DersKodu)
+            .ToListAsync();
+
         var query = _context.Ders
             .Include(d => d.Organizasyon)
             .Include(d => d.AcilanDers)
+            .Include(d => d.OnKosulDers)
             .AsQueryable();
 
         if (bolumId.HasValue && bolumId.Value > 0)
         {
             query = query.Where(d => d.OrganizasyonId == bolumId.Value);
+        }
+        else if (fakulteId.HasValue && fakulteId.Value > 0)
+        {
+            query = query.Where(d => d.Organizasyon.UstOrganizasyonId == fakulteId.Value);
         }
 
         if (!string.IsNullOrWhiteSpace(arama))
@@ -1232,7 +1249,10 @@ public class AdminController : Controller
             .ThenBy(d => d.DersKodu)
             .ToListAsync();
 
+        ViewBag.Fakulteler = fakulteler;
         ViewBag.Bolumler = bolumler;
+        ViewBag.TumDersler = tumDersler;
+        ViewBag.SeciliFakulteId = fakulteId;
         ViewBag.SeciliBolumId = bolumId;
         ViewBag.Arama = arama;
 
@@ -1246,17 +1266,19 @@ public class AdminController : Controller
         int organizasyonId,
         string dersKodu,
         string dersAdi,
-        decimal kredi,
-        decimal akts,
+        string kredi,
+        string akts,
         int teorik,
         int uygulama,
         string dersTuru,
+        int? onKosulDersId,
+        int? geriDonFakulteId,
         int? geriDonBolumId)
     {
         if (organizasyonId <= 0 || string.IsNullOrWhiteSpace(dersKodu) || string.IsNullOrWhiteSpace(dersAdi))
         {
             TempData["Hata"] = "Bölüm, Ders Kodu ve Ders Adı alanları zorunludur.";
-            return RedirectToAction(nameof(DersYonetimi), new { bolumId = geriDonBolumId });
+            return RedirectToAction(nameof(DersYonetimi), new { fakulteId = geriDonFakulteId, bolumId = geriDonBolumId });
         }
 
         dersKodu = dersKodu.Trim().ToUpper();
@@ -1269,16 +1291,29 @@ public class AdminController : Controller
         else if (dersTuru.Equals("Zorunlu", StringComparison.OrdinalIgnoreCase))
             dersTuru = "Zorunlu";
 
-        if (kredi < 0 || akts < 1 || teorik < 0 || uygulama < 0)
+        decimal krediVal = 0m;
+        decimal aktsVal = 0m;
+        if (!string.IsNullOrWhiteSpace(kredi))
+        {
+            var str = kredi.Trim().Replace(',', '.');
+            decimal.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out krediVal);
+        }
+        if (!string.IsNullOrWhiteSpace(akts))
+        {
+            var str = akts.Trim().Replace(',', '.');
+            decimal.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out aktsVal);
+        }
+
+        if (krediVal < 0 || aktsVal < 1 || teorik < 0 || uygulama < 0)
         {
             TempData["Hata"] = "Kredi, AKTS, Teorik ve Uygulama saatleri geçerli birer sayı olmalıdır.";
-            return RedirectToAction(nameof(DersYonetimi), new { bolumId = geriDonBolumId });
+            return RedirectToAction(nameof(DersYonetimi), new { fakulteId = geriDonFakulteId, bolumId = geriDonBolumId });
         }
 
         if (await _context.Ders.AnyAsync(d => d.DersKodu == dersKodu))
         {
             TempData["Hata"] = $"'{dersKodu}' ders kodu sistemde başka bir ders tarafından kullanılmaktadır.";
-            return RedirectToAction(nameof(DersYonetimi), new { bolumId = geriDonBolumId });
+            return RedirectToAction(nameof(DersYonetimi), new { fakulteId = geriDonFakulteId, bolumId = geriDonBolumId });
         }
 
         var der = new Der
@@ -1286,20 +1321,29 @@ public class AdminController : Controller
             OrganizasyonId = organizasyonId,
             DersKodu = dersKodu,
             DersAdi = dersAdi,
-            Kredi = kredi,
-            Akts = akts,
+            Kredi = krediVal,
+            Akts = aktsVal,
             Teorik = teorik,
             Uygulama = uygulama,
             DersTuru = dersTuru,
             AktiflikDurumu = true
         };
 
+        if (onKosulDersId.HasValue && onKosulDersId.Value > 0)
+        {
+            var onKosul = await _context.Ders.FindAsync(onKosulDersId.Value);
+            if (onKosul != null)
+            {
+                der.OnKosulDers.Add(onKosul);
+            }
+        }
+
         try
         {
             _context.Ders.Add(der);
             await _context.SaveChangesAsync();
             string turGoster = der.DersTuru == "Secmeli" ? "Seçmeli" : der.DersTuru;
-            TempData["Basari"] = $"'{der.DersKodu} - {der.DersAdi}' ({turGoster}) başarıyla ders kataloğuna eklendi.";
+            TempData["Basari"] = $"'{der.DersKodu} - {der.DersAdi}' ({turGoster}) başarıyla eklendi.";
         }
         catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
             when (ex.InnerException?.Message.Contains("UQ_Ders_DersKodu") == true
@@ -1317,19 +1361,19 @@ public class AdminController : Controller
             TempData["Hata"] = "Ders kaydı sırasında beklenmedik bir hata oluştu. Lütfen bilgileri kontrol edip tekrar deneyin.";
         }
 
-        return RedirectToAction(nameof(DersYonetimi), new { bolumId = geriDonBolumId });
+        return RedirectToAction(nameof(DersYonetimi), new { fakulteId = geriDonFakulteId, bolumId = geriDonBolumId });
     }
 
     // POST: /Admin/DersDurumDegistir
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DersDurumDegistir(int id, int? geriDonBolumId)
+    public async Task<IActionResult> DersDurumDegistir(int id, int? geriDonFakulteId, int? geriDonBolumId)
     {
         var der = await _context.Ders.FindAsync(id);
         if (der == null)
         {
             TempData["Hata"] = "Ders bulunamadı.";
-            return RedirectToAction(nameof(DersYonetimi), new { bolumId = geriDonBolumId });
+            return RedirectToAction(nameof(DersYonetimi), new { fakulteId = geriDonFakulteId, bolumId = geriDonBolumId });
         }
 
         der.AktiflikDurumu = !der.AktiflikDurumu;
@@ -1338,37 +1382,48 @@ public class AdminController : Controller
         string durumMetin = der.AktiflikDurumu ? "Aktif" : "Pasif";
         TempData["Basari"] = $"'{der.DersKodu}' kodlu dersin durumu {durumMetin} yapıldı.";
 
-        return RedirectToAction(nameof(DersYonetimi), new { bolumId = geriDonBolumId });
+        return RedirectToAction(nameof(DersYonetimi), new { fakulteId = geriDonFakulteId, bolumId = geriDonBolumId });
     }
 
     // POST: /Admin/DersSil
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DersSil(int id, int? geriDonBolumId)
+    public async Task<IActionResult> DersSil(int id, int? geriDonFakulteId, int? geriDonBolumId)
     {
         var der = await _context.Ders
             .Include(d => d.AcilanDers)
+            .Include(d => d.OnKosulDers)
+            .Include(d => d.Ders)
             .FirstOrDefaultAsync(d => d.Id == id);
 
         if (der == null)
         {
             TempData["Hata"] = "Silinmek istenen ders bulunamadı.";
-            return RedirectToAction(nameof(DersYonetimi), new { bolumId = geriDonBolumId });
+            return RedirectToAction(nameof(DersYonetimi), new { fakulteId = geriDonFakulteId, bolumId = geriDonBolumId });
         }
 
         if (der.AcilanDers.Any())
         {
             TempData["Hata"] = $"'{der.DersKodu} - {der.DersAdi}' dersine ait {der.AcilanDers.Count} adet açılan dönem dersi bulunmaktadır. Bu nedenle ders silinemez; dilerseniz durumu 'Pasif' yapabilirsiniz.";
-            return RedirectToAction(nameof(DersYonetimi), new { bolumId = geriDonBolumId });
+            return RedirectToAction(nameof(DersYonetimi), new { fakulteId = geriDonFakulteId, bolumId = geriDonBolumId });
         }
+
+        if (der.Ders.Any())
+        {
+            var bagliKodlar = string.Join(", ", der.Ders.Select(x => x.DersKodu));
+            TempData["Hata"] = $"'{der.DersKodu}' dersi başka derslerin ({bagliKodlar}) ön koşulu olduğu için silinemez. Önce ilgili derslerin ön koşul bağını kaldırınız.";
+            return RedirectToAction(nameof(DersYonetimi), new { fakulteId = geriDonFakulteId, bolumId = geriDonBolumId });
+        }
+
+        der.OnKosulDers.Clear();
 
         var k = der.DersKodu;
         var a = der.DersAdi;
         _context.Ders.Remove(der);
         await _context.SaveChangesAsync();
 
-        TempData["Basari"] = $"'{k} - {a}' kataloğundan silindi.";
-        return RedirectToAction(nameof(DersYonetimi), new { bolumId = geriDonBolumId });
+        TempData["Basari"] = $"'{k} - {a}' sistemden silindi.";
+        return RedirectToAction(nameof(DersYonetimi), new { fakulteId = geriDonFakulteId, bolumId = geriDonBolumId });
     }
 
     // GET: /Admin/DersKoduKontrol (AJAX)
