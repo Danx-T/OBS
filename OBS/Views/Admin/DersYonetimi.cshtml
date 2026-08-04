@@ -1,0 +1,594 @@
+@model List<OBS.Models.Der>
+@{
+    ViewData["Title"] = "Ders Yönetimi";
+    var bolumler = ViewBag.Bolumler as List<OBS.Models.Organizasyon> ?? new List<OBS.Models.Organizasyon>();
+    int? seciliBolumId = ViewBag.SeciliBolumId as int?;
+    string? arama = ViewBag.Arama as string;
+    int aktifSayisi = Model.Count(d => d.AktiflikDurumu);
+}
+
+<style>
+    :root {
+        --primary:      #2563eb;
+        --primary-dark: #1e40af;
+        --success:      #10b981;
+        --danger:       #ef4444;
+        --warning:      #f59e0b;
+        --muted:        #64748b;
+    }
+
+    /* ── WRAPPER ── */
+    .ders-wrap {
+        max-width: 1350px;
+        margin: 36px auto;
+        padding: 0 20px 80px;
+        font-family: 'Outfit', 'Inter', 'Segoe UI', sans-serif;
+    }
+
+    /* ── HEADER ── */
+    .ders-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 28px;
+    }
+
+    .ders-title h1 {
+        font-size: 1.65rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0;
+        letter-spacing: -0.02em;
+    }
+
+    .ders-title p {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin: 4px 0 0;
+    }
+
+    /* ── STAT PILLS ── */
+    .stats-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .stat-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 0.82rem;
+    }
+
+    .stat-pill.blue   { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+    .stat-pill.green  { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .stat-pill.purple { background: #faf5ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+
+    /* ── GLASS CARD ── */
+    .panel-card {
+        background: rgba(255,255,255,0.92);
+        backdrop-filter: blur(12px);
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.06);
+        overflow: hidden;
+    }
+
+    .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .panel-header .panel-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .cnt-badge {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 2px 10px;
+    }
+
+    /* ── FILTER BAR ── */
+    .filter-bar {
+        padding: 16px 20px;
+        background: #ffffff;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    /* ── TABLE ── */
+    .table-custom {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table-custom th {
+        background: #f8fafc;
+        padding: 14px 16px;
+        font-size: 0.73rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #475569;
+        border-bottom: 1px solid #e2e8f0;
+        white-space: nowrap;
+    }
+
+    .table-custom td {
+        padding: 14px 16px;
+        font-size: 0.88rem;
+        color: #1e293b;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .table-custom tr:last-child td { border-bottom: none; }
+    .table-custom tr:hover td { background: #f8fafc; transition: background 0.12s; }
+
+    /* ── CHIP & BADGES ── */
+    .kod-chip {
+        font-family: 'Fira Code', monospace;
+        font-size: 0.84rem;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #1e293b;
+        border: 1px solid #e2e8f0;
+        display: inline-block;
+    }
+
+    .type-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 9px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .type-badge.zorunlu { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+    .type-badge.secmeli { background: #faf5ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 0.73rem;
+        font-weight: 700;
+    }
+
+    .status-badge.aktif { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .status-badge.pasif { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+
+    .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .dot.aktif { background: #10b981; }
+    .dot.pasif { background: #94a3b8; }
+
+    /* ── ACTION BUTTONS ── */
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.78rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .btn-primary-soft {
+        background: #eff6ff;
+        color: #2563eb;
+        border: 1px solid #bfdbfe;
+    }
+
+    .btn-primary-soft:hover {
+        background: #2563eb;
+        color: #fff;
+        border-color: #2563eb;
+    }
+
+    .btn-danger-soft {
+        background: #fff1f2;
+        color: #be123c;
+        border: 1px solid #fecdd3;
+    }
+
+    .btn-danger-soft:hover {
+        background: #ef4444;
+        color: #fff;
+        border-color: #ef4444;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+        text-align: center;
+        padding: 48px 20px;
+        color: var(--muted);
+    }
+
+    .empty-state .icon { font-size: 2.8rem; margin-bottom: 10px; }
+    .empty-state p { font-size: 0.9rem; margin: 0; }
+
+    @@media (max-width: 992px) {
+        .ders-wrap { padding: 0 12px 60px; }
+        .table-custom th:nth-child(4),
+        .table-custom td:nth-child(4) { display: none; }
+    }
+</style>
+
+<div class="ders-wrap">
+
+    <!-- HEADER -->
+    <div class="ders-header">
+        <div class="ders-title">
+            <h1>📚 Ders Yönetimi</h1>
+            <p>Bölümlere ait dersleri tanımlayın; bu dersler dönemlerde açılmaya ve kayıt yapılmaya hazır hale gelir.</p>
+        </div>
+        <div class="stats-row">
+            <span class="stat-pill blue">📚 Toplam Ders: @Model.Count</span>
+            <span class="stat-pill green">🟢 Aktif Ders: @aktifSayisi</span>
+            <span class="stat-pill purple">🏛️ Kayıtlı Bölüm: @bolumler.Count</span>
+        </div>
+    </div>
+
+    <!-- ALERTS -->
+    @if (TempData["Basari"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm mb-4" role="alert" style="border-radius:12px;">
+            <strong>✓ Başarılı:</strong> @TempData["Basari"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Hata"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert" style="border-radius:12px;">
+            <strong>✕ Hata:</strong> @TempData["Hata"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+
+        <!-- ═══════════════════════════════════
+             SOL: Mevcut Ders Kataloğu Tablosu
+        ═══════════════════════════════════ -->
+        <div class="col-lg-8">
+            <div class="panel-card">
+                <div class="panel-header">
+                    <span class="panel-title">📖 Tanımlı Dersler</span>
+                    <span class="cnt-badge">@Model.Count</span>
+                </div>
+
+                <!-- Arama ve Bölüm Filtreleme Barı -->
+                <div class="filter-bar">
+                    <form asp-action="DersYonetimi" asp-controller="Admin" method="get" class="d-flex flex-wrap gap-2 w-100 m-0">
+                        <select name="bolumId" class="form-select form-select-sm" style="max-width:220px;" onchange="this.form.submit();">
+                            <option value="">-- Tüm Bölümleri Göster --</option>
+                            @foreach (var b in bolumler)
+                            {
+                                if (seciliBolumId == b.Id)
+                                {
+                                    <option value="@b.Id" selected>@b.Adi</option>
+                                }
+                                else
+                                {
+                                    <option value="@b.Id">@b.Adi</option>
+                                }
+                            }
+                        </select>
+
+                        <div class="input-group input-group-sm" style="max-width:280px;">
+                            <input type="text" name="arama" class="form-control" placeholder="Ders Kodu veya Adı ara..." value="@arama" />
+                            <button type="submit" class="btn btn-outline-secondary">🔍 Ara</button>
+                        </div>
+
+                        @if (seciliBolumId.HasValue || !string.IsNullOrWhiteSpace(arama))
+                        {
+                            <a asp-action="DersYonetimi" asp-controller="Admin" class="btn btn-sm btn-outline-danger d-flex align-items-center">
+                                ✕ Filtreyi Temizle
+                            </a>
+                        }
+                    </form>
+                </div>
+
+                <div>
+                    @if (!Model.Any())
+                    {
+                        <div class="empty-state">
+                            <div class="icon">📚</div>
+                            <p>Kriterlere uygun ders kaydı bulunmamaktadır.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>Ders Kodu</th>
+                                        <th>Ders Adı & Bölümü</th>
+                                        <th>Saat & AKTS</th>
+                                        <th>Tür</th>
+                                        <th>Durum</th>
+                                        <th>Dönem</th>
+                                        <th class="text-end">İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var d in Model)
+                                    {
+                                        string turClass = (d.DersTuru == "Secmeli" || d.DersTuru == "Seçmeli") ? "secmeli" : "zorunlu";
+                                        string turGoster = (d.DersTuru == "Secmeli") ? "Seçmeli" : d.DersTuru;
+
+                                        string stClass = d.AktiflikDurumu ? "aktif" : "pasif";
+                                        string stText  = d.AktiflikDurumu ? "Aktif" : "Pasif";
+
+                                        <tr>
+                                            <td>
+                                                <span class="kod-chip">@d.DersKodu</span>
+                                            </td>
+                                            <td>
+                                                <div class="fw-bold text-dark">@d.DersAdi</div>
+                                                <div class="small text-muted" style="font-size:0.75rem;">@(d.Organizasyon?.Adi ?? "—")</div>
+                                            </td>
+                                            <td>
+                                                <div class="small fw-600 text-dark">@d.Teorik+@d.Uygulama Saat</div>
+                                                <div class="small text-muted" style="font-size:0.75rem;">@d.Kredi Kredi / @d.Akts AKTS</div>
+                                            </td>
+                                            <td>
+                                                <span class="type-badge @turClass">@turGoster</span>
+                                            </td>
+                                            <td>
+                                                <span class="status-badge @stClass">
+                                                    <span class="dot @stClass"></span>
+                                                    @stText
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="cnt-badge" title="Bu dersin açıldığı dönem sayısı">@d.AcilanDers.Count Dönem</span>
+                                            </td>
+                                            <td class="text-end">
+                                                <div class="d-inline-flex gap-1">
+                                                    <form asp-action="DersDurumDegistir" asp-controller="Admin" method="post" class="m-0">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@d.Id" />
+                                                        <input type="hidden" name="geriDonBolumId" value="@seciliBolumId" />
+                                                        <button type="submit" class="btn-action btn-primary-soft" title="Aktif / Pasif durumunu değiştir">
+                                                            @(d.AktiflikDurumu ? "⏸ Pasife Al" : "▶ Aktif Yap")
+                                                        </button>
+                                                    </form>
+
+                                                    <form asp-action="DersSil" asp-controller="Admin" method="post" class="m-0"
+                                                          onsubmit="return confirm('@d.DersKodu - @d.DersAdi dersini kalıcı olarak silmek istediğinize emin misiniz?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@d.Id" />
+                                                        <input type="hidden" name="geriDonBolumId" value="@seciliBolumId" />
+                                                        <button type="submit" class="btn-action btn-danger-soft" title="Dersi Sil">
+                                                            🗑️ Sil
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════
+             SAĞ: Yeni Ders Künyesi Ekleme Formu
+        ═══════════════════════════════════ -->
+        <div class="col-lg-4">
+            <div class="panel-card">
+                <div class="panel-header">
+                    <span class="panel-title">➕ Yeni Ders Ekle</span>
+                </div>
+                <div class="p-4">
+                    <form asp-action="DersEkle" asp-controller="Admin" method="post" id="dersEkleForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="geriDonBolumId" value="@seciliBolumId" />
+
+                        <!-- Bölüm Seçimi -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted mb-1">Bağlı Olduğu Bölüm <span class="text-danger">*</span></label>
+                            <select name="organizasyonId" class="form-select" required id="bolumSelect">
+                                <option value="">-- Bölüm Seçiniz --</option>
+                                @foreach (var b in bolumler)
+                                {
+                                    if (seciliBolumId == b.Id)
+                                    {
+                                        <option value="@b.Id" selected>@b.Adi</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@b.Id">@b.Adi</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Ders Kodu -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted mb-1">Ders Kodu <span class="text-danger">*</span></label>
+                            <input type="text" name="dersKodu" class="form-control font-monospace"
+                                   placeholder="ör: BM101, MAT101" required id="dersKoduInput"
+                                   maxlength="10" style="text-transform: uppercase;" />
+                            <div id="dersKoduHint" style="font-size:0.78rem; margin-top:4px; min-height:18px;"></div>
+                        </div>
+
+                        <!-- Ders Adı -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted mb-1">Ders Adı <span class="text-danger">*</span></label>
+                            <input type="text" name="dersAdi" class="form-control"
+                                   placeholder="ör: Algoritma ve Programlama I" required id="dersAdiInput"
+                                   maxlength="100" />
+                        </div>
+
+                        <!-- Ders Türü -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted mb-1">Ders Türü <span class="text-danger">*</span></label>
+                            <select name="dersTuru" class="form-select" required>
+                                <option value="Zorunlu">Zorunlu</option>
+                                <option value="Seçmeli">Seçmeli</option>
+                            </select>
+                        </div>
+
+                        <hr class="border-secondary-subtle my-3" />
+                        <div class="small fw-bold text-uppercase text-muted mb-2" style="font-size:0.72rem; letter-spacing:0.05em;">
+                            📊 Saat, Kredi & AKTS Bilgileri
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-1">Teorik (Saat)</label>
+                                <input type="number" name="teorik" class="form-control form-control-sm" min="0" max="20" value="3" required />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-1">Uygulama (Saat)</label>
+                                <input type="number" name="uygulama" class="form-control form-control-sm" min="0" max="20" value="0" required />
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-4">
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-1">Kredi</label>
+                                <input type="number" name="kredi" class="form-control form-control-sm" step="0.5" min="0" max="30" value="3.0" required />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-1">AKTS</label>
+                                <input type="number" name="akts" class="form-control form-control-sm" step="0.5" min="1" max="30" value="5.0" required />
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2" id="dersEkleBtn">
+                            ➕ Dersi Kaydet
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    'use strict';
+
+    const kodInput  = document.getElementById('dersKoduInput');
+    const submitBtn = document.getElementById('dersEkleBtn');
+    const hint      = document.getElementById('dersKoduHint');
+
+    if (!kodInput || !submitBtn) return;
+
+    let debounceTimer = null;
+    let kodGecerli = true;
+
+    function kontrolEt() {
+        const val = kodInput.value.trim().toUpperCase();
+
+        if (val === '') {
+            hint.textContent = '';
+            kodInput.style.borderColor = '';
+            kodGecerli = false;
+            submitBtn.disabled = false;
+            return;
+        }
+
+        if (val.length < 2) {
+            hint.style.color = '#dc2626';
+            hint.textContent = '✗ En az 2 karakter olmalıdır.';
+            kodInput.style.borderColor = '#ef4444';
+            kodGecerli = false;
+            submitBtn.disabled = true;
+            return;
+        }
+
+        hint.style.color = '#64748b';
+        hint.textContent = '⏳ Kontrol ediliyor…';
+        kodInput.style.borderColor = '';
+        submitBtn.disabled = true;
+
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function () {
+            fetch('/Admin/DersKoduKontrol?dersKodu=' + encodeURIComponent(val))
+                .then(r => r.json())
+                .then(data => {
+                    if (data.kullanildi) {
+                        hint.style.color = '#dc2626';
+                        hint.textContent = '✗ "' + val + '" kodu sistemde zaten kullanımda.';
+                        kodInput.style.borderColor = '#ef4444';
+                        kodGecerli = false;
+                        submitBtn.disabled = true;
+                    } else {
+                        hint.style.color = '#059669';
+                        hint.textContent = '✓ "' + val + '" ders kodu kullanılabilir.';
+                        kodInput.style.borderColor = '#10b981';
+                        kodGecerli = true;
+                        submitBtn.disabled = false;
+                    }
+                })
+                .catch(() => {
+                    hint.style.color = '#92400e';
+                    hint.textContent = '⚠ Kontrol edilemedi; devam edebilirsiniz.';
+                    kodInput.style.borderColor = '#f59e0b';
+                    kodGecerli = true;
+                    submitBtn.disabled = false;
+                });
+        }, 350);
+    }
+
+    kodInput.addEventListener('input', function() {
+        this.value = this.value.toUpperCase();
+        kontrolEt();
+    });
+
+    document.getElementById('dersEkleForm').addEventListener('submit', function (e) {
+        if (!kodGecerli && kodInput.value.trim() !== '') {
+            e.preventDefault();
+            alert('Lütfen geçerli ve benzersiz bir Ders Kodu giriniz.');
+        }
+    });
+
+})();
+</script>
+}
