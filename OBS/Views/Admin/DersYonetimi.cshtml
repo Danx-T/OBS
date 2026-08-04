@@ -1,7 +1,10 @@
 @model List<OBS.Models.Der>
 @{
     ViewData["Title"] = "Ders Yönetimi";
+    var fakulteler = ViewBag.Fakulteler as List<OBS.Models.Organizasyon> ?? new List<OBS.Models.Organizasyon>();
     var bolumler = ViewBag.Bolumler as List<OBS.Models.Organizasyon> ?? new List<OBS.Models.Organizasyon>();
+    var tumDersler = ViewBag.TumDersler as List<OBS.Models.Der> ?? new List<OBS.Models.Der>();
+    int? seciliFakulteId = ViewBag.SeciliFakulteId as int?;
     int? seciliBolumId = ViewBag.SeciliBolumId as int?;
     string? arama = ViewBag.Arama as string;
     int aktifSayisi = Model.Count(d => d.AktiflikDurumu);
@@ -245,8 +248,6 @@
 
     @@media (max-width: 992px) {
         .ders-wrap { padding: 0 12px 60px; }
-        .table-custom th:nth-child(4),
-        .table-custom td:nth-child(4) { display: none; }
     }
 </style>
 
@@ -296,9 +297,24 @@
                 <!-- Arama ve Bölüm Filtreleme Barı -->
                 <div class="filter-bar">
                     <form asp-action="DersYonetimi" asp-controller="Admin" method="get" class="d-flex flex-wrap gap-2 w-100 m-0">
-                        <select name="bolumId" class="form-select form-select-sm" style="max-width:220px;" onchange="this.form.submit();">
-                            <option value="">-- Tüm Bölümleri Göster --</option>
-                            @foreach (var b in bolumler)
+                        <select name="fakulteId" class="form-select form-select-sm" style="max-width:200px;" onchange="this.form.submit();">
+                            <option value="">-- Tüm Fakülteler --</option>
+                            @foreach (var f in fakulteler)
+                            {
+                                if (seciliFakulteId == f.Id)
+                                {
+                                    <option value="@f.Id" selected>@f.Adi</option>
+                                }
+                                else
+                                {
+                                    <option value="@f.Id">@f.Adi</option>
+                                }
+                            }
+                        </select>
+
+                        <select name="bolumId" class="form-select form-select-sm" style="max-width:200px;" onchange="this.form.submit();">
+                            <option value="">-- Tüm Bölümler --</option>
+                            @foreach (var b in bolumler.Where(x => !seciliFakulteId.HasValue || x.UstOrganizasyonId == seciliFakulteId.Value))
                             {
                                 if (seciliBolumId == b.Id)
                                 {
@@ -311,15 +327,15 @@
                             }
                         </select>
 
-                        <div class="input-group input-group-sm" style="max-width:280px;">
-                            <input type="text" name="arama" class="form-control" placeholder="Ders Kodu veya Adı ara..." value="@arama" />
+                        <div class="input-group input-group-sm" style="max-width:250px;">
+                            <input type="text" name="arama" class="form-control" placeholder="Ders Kodu veya Adı..." value="@arama" />
                             <button type="submit" class="btn btn-outline-secondary">🔍 Ara</button>
                         </div>
 
-                        @if (seciliBolumId.HasValue || !string.IsNullOrWhiteSpace(arama))
+                        @if (seciliFakulteId.HasValue || seciliBolumId.HasValue || !string.IsNullOrWhiteSpace(arama))
                         {
                             <a asp-action="DersYonetimi" asp-controller="Admin" class="btn btn-sm btn-outline-danger d-flex align-items-center">
-                                ✕ Filtreyi Temizle
+                                ✕ Temizle
                             </a>
                         }
                     </form>
@@ -344,7 +360,6 @@
                                         <th>Saat & AKTS</th>
                                         <th>Tür</th>
                                         <th>Durum</th>
-                                        <th>Dönem</th>
                                         <th class="text-end">İşlemler</th>
                                     </tr>
                                 </thead>
@@ -364,6 +379,14 @@
                                             <td>
                                                 <div class="fw-bold text-dark">@d.DersAdi</div>
                                                 <div class="small text-muted" style="font-size:0.75rem;">@(d.Organizasyon?.Adi ?? "—")</div>
+                                                @if (d.OnKosulDers.Any())
+                                                {
+                                                    <div class="mt-1">
+                                                        <span class="badge bg-warning text-dark font-monospace" style="font-size:0.7rem;">
+                                                            🔒 Ön Koşul: @string.Join(", ", d.OnKosulDers.Select(x => x.DersKodu))
+                                                        </span>
+                                                    </div>
+                                                }
                                             </td>
                                             <td>
                                                 <div class="small fw-600 text-dark">@d.Teorik+@d.Uygulama Saat</div>
@@ -377,9 +400,6 @@
                                                     <span class="dot @stClass"></span>
                                                     @stText
                                                 </span>
-                                            </td>
-                                            <td>
-                                                <span class="cnt-badge" title="Bu dersin açıldığı dönem sayısı">@d.AcilanDers.Count Dönem</span>
                                             </td>
                                             <td class="text-end">
                                                 <div class="d-inline-flex gap-1">
@@ -424,22 +444,42 @@
                 <div class="p-4">
                     <form asp-action="DersEkle" asp-controller="Admin" method="post" id="dersEkleForm">
                         @Html.AntiForgeryToken()
+                        <input type="hidden" name="geriDonFakulteId" value="@seciliFakulteId" />
                         <input type="hidden" name="geriDonBolumId" value="@seciliBolumId" />
+
+                        <!-- Fakülte Seçimi -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted mb-1">Bağlı Olduğu Fakülte <span class="text-danger">*</span></label>
+                            <select id="formFakulteSelect" class="form-select" required>
+                                <option value="">-- Önce Fakülte Seçiniz --</option>
+                                @foreach (var f in fakulteler)
+                                {
+                                    if (seciliFakulteId == f.Id)
+                                    {
+                                        <option value="@f.Id" selected>@f.Adi</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@f.Id">@f.Adi</option>
+                                    }
+                                }
+                            </select>
+                        </div>
 
                         <!-- Bölüm Seçimi -->
                         <div class="mb-3">
                             <label class="form-label fw-bold small text-muted mb-1">Bağlı Olduğu Bölüm <span class="text-danger">*</span></label>
-                            <select name="organizasyonId" class="form-select" required id="bolumSelect">
+                            <select name="organizasyonId" id="formBolumSelect" class="form-select" required>
                                 <option value="">-- Bölüm Seçiniz --</option>
                                 @foreach (var b in bolumler)
                                 {
                                     if (seciliBolumId == b.Id)
                                     {
-                                        <option value="@b.Id" selected>@b.Adi</option>
+                                        <option value="@b.Id" data-fakulte-id="@b.UstOrganizasyonId" selected>@b.Adi</option>
                                     }
                                     else
                                     {
-                                        <option value="@b.Id">@b.Adi</option>
+                                        <option value="@b.Id" data-fakulte-id="@b.UstOrganizasyonId">@b.Adi</option>
                                     }
                                 }
                             </select>
@@ -469,6 +509,19 @@
                                 <option value="Zorunlu">Zorunlu</option>
                                 <option value="Seçmeli">Seçmeli</option>
                             </select>
+                        </div>
+
+                        <!-- Ön Koşul Ders -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted mb-1">Ön Koşul Ders (Opsiyonel)</label>
+                            <select name="onKosulDersId" class="form-select">
+                                <option value="">-- Yok (Ön Koşulsuz) --</option>
+                                @foreach (var td in tumDersler)
+                                {
+                                    <option value="@td.Id">@td.DersKodu - @td.DersAdi</option>
+                                }
+                            </select>
+                            <div class="form-text small" style="font-size:0.75rem;">Bu dersi alabilmek için önceden başarılmış olması gereken ders.</div>
                         </div>
 
                         <hr class="border-secondary-subtle my-3" />
@@ -513,6 +566,42 @@
 <script>
 (function () {
     'use strict';
+
+    // Fakülte - Bölüm Cascade Filtreleme
+    const fakulteSelect = document.getElementById('formFakulteSelect');
+    const bolumSelect   = document.getElementById('formBolumSelect');
+    if (fakulteSelect && bolumSelect) {
+        function updateBolumListesi() {
+            const seciliFId = fakulteSelect.value;
+            const options = bolumSelect.querySelectorAll('option[data-fakulte-id]');
+
+            options.forEach(opt => {
+                const optFId = opt.getAttribute('data-fakulte-id');
+                if (!seciliFId || optFId === seciliFId) {
+                    opt.style.display = '';
+                    opt.disabled = false;
+                } else {
+                    opt.style.display = 'none';
+                    opt.disabled = true;
+                }
+            });
+
+            if (bolumSelect.selectedOptions[0] && bolumSelect.selectedOptions[0].disabled) {
+                bolumSelect.value = '';
+            }
+
+            if (!seciliFId) {
+                bolumSelect.disabled = true;
+                bolumSelect.options[0].textContent = '-- Önce Fakülte Seçiniz --';
+            } else {
+                bolumSelect.disabled = false;
+                bolumSelect.options[0].textContent = '-- Bölüm Seçiniz --';
+            }
+        }
+
+        fakulteSelect.addEventListener('change', updateBolumListesi);
+        updateBolumListesi();
+    }
 
     const kodInput  = document.getElementById('dersKoduInput');
     const submitBtn = document.getElementById('dersEkleBtn');
