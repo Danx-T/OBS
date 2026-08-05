@@ -1,0 +1,733 @@
+@model List<OBS.Models.AcilanDer>
+@{
+    ViewData["Title"] = "Ders Açma İşlemleri";
+    var donemler = ViewBag.Donemler as List<OBS.Models.Donem> ?? new List<OBS.Models.Donem>();
+    var fakulteler = ViewBag.Fakulteler as List<OBS.Models.Organizasyon> ?? new List<OBS.Models.Organizasyon>();
+    var bolumler = ViewBag.Bolumler as List<OBS.Models.Organizasyon> ?? new List<OBS.Models.Organizasyon>();
+    var tumDersler = ViewBag.TumDersler as List<OBS.Models.Der> ?? new List<OBS.Models.Der>();
+    var ogretimUyeleri = ViewBag.OgretimUyeleri as List<OBS.Models.OgretimUyesi> ?? new List<OBS.Models.OgretimUyesi>();
+
+    int? seciliDonemId = ViewBag.SeciliDonemId as int?;
+    int? seciliFakulteId = ViewBag.SeciliFakulteId as int?;
+    int? seciliBolumId = ViewBag.SeciliBolumId as int?;
+    string? arama = ViewBag.Arama as string;
+
+    int aktifSayisi = Model.Count(a => a.Durum == "Aktif" || string.IsNullOrWhiteSpace(a.Durum));
+}
+
+<style>
+    :root {
+        --primary:      #2563eb;
+        --primary-dark: #1e40af;
+        --success:      #10b981;
+        --danger:       #ef4444;
+        --warning:      #f59e0b;
+        --surface:      #ffffff;
+        --border:       #e2e8f0;
+        --text:         #0f172a;
+        --muted:        #64748b;
+    }
+
+    body {
+        background: #f8fafc;
+        font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .acilanders-wrap {
+        padding: 0 24px 60px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    /* HEADER */
+    .page-header-card {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        border-radius: 20px;
+        padding: 32px;
+        color: white;
+        margin-bottom: 28px;
+        box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.25);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .page-header-card h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0 0 6px 0;
+        letter-spacing: -0.02em;
+    }
+
+    .page-header-card p {
+        margin: 0;
+        opacity: 0.85;
+        font-size: 0.95rem;
+    }
+
+    .stats-badge-group {
+        display: flex;
+        gap: 12px;
+    }
+
+    .stat-pill {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        padding: 10px 18px;
+        border-radius: 12px;
+        text-align: center;
+    }
+
+    .stat-pill .num {
+        font-size: 1.35rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .stat-pill .lbl {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        opacity: 0.8;
+        margin-top: 4px;
+    }
+
+    /* PANELS */
+    .panel-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+        height: 100%;
+    }
+
+    .panel-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #fcfcfc;
+    }
+
+    .panel-title {
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: var(--text);
+        margin: 0;
+    }
+
+    /* FILTER BAR */
+    .filter-bar {
+        background: #f8fafc;
+        border-bottom: 1px solid var(--border);
+        padding: 14px 20px;
+    }
+
+    /* TABLE */
+    .table-custom {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table-custom th {
+        background: #f8fafc;
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .table-custom td {
+        padding: 14px 18px;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--border);
+        color: var(--text);
+        font-size: 0.92rem;
+    }
+
+    .table-custom tr:last-child td {
+        border-bottom: none;
+    }
+
+    .table-custom tr:hover td {
+        background: #f8fafc;
+    }
+
+    /* BADGES */
+    .sube-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        background: #eff6ff;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+    }
+
+    .donem-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-badge.aktif {
+        background: #ecfdf5;
+        color: #047857;
+        border: 1px solid #a7f3d0;
+    }
+
+    .status-badge.pasif {
+        background: #f1f5f9;
+        color: #64748b;
+        border: 1px solid #cbd5e1;
+    }
+
+    .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+    }
+
+    .dot.aktif { background: #10b981; }
+    .dot.pasif { background: #94a3b8; }
+
+    .kontenjan-bar {
+        height: 6px;
+        border-radius: 3px;
+        background: #e2e8f0;
+        overflow: hidden;
+        margin-top: 4px;
+        width: 90px;
+    }
+
+    .kontenjan-bar-fill {
+        height: 100%;
+        background: var(--primary);
+        border-radius: 3px;
+    }
+
+    /* ACTION BUTTONS */
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+
+    .btn-primary-soft {
+        background: #eff6ff;
+        color: var(--primary);
+        border-color: #dbeafe;
+    }
+    .btn-primary-soft:hover { background: var(--primary); color: white; }
+
+    .btn-danger-soft {
+        background: #fef2f2;
+        color: var(--danger);
+        border-color: #fee2e2;
+    }
+    .btn-danger-soft:hover { background: var(--danger); color: white; }
+
+    .empty-state {
+        text-align: center;
+        padding: 48px 20px;
+        color: var(--muted);
+    }
+
+    .empty-state .icon { font-size: 2.8rem; margin-bottom: 10px; }
+    .empty-state p { font-size: 0.9rem; margin: 0; }
+</style>
+
+<div class="acilanders-wrap">
+
+    <!-- HEADER -->
+    <div class="page-header-card">
+        <div>
+            <h1>📖 Ders Açma İşlemleri (Şube & Akademisyen Atama)</h1>
+            <p>Akademik dönemlerde açılan ders şubelerini, kontenjanlarını ve öğretim üyesi görevlendirmelerini yönetin.</p>
+        </div>
+        <div class="stats-badge-group">
+            <div class="stat-pill">
+                <div class="num">@Model.Count</div>
+                <div class="lbl">Listelenen Şube</div>
+            </div>
+            <div class="stat-pill">
+                <div class="num text-warning">@aktifSayisi</div>
+                <div class="lbl">Aktif Şube</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UYARILAR -->
+    @if (TempData["Basari"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm d-flex align-items-center mb-4" role="alert" style="border-radius:12px; background:#ecfdf5; color:#065f46;">
+            <span class="fs-5 me-2">✓</span>
+            <div>@TempData["Basari"]</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Hata"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm d-flex align-items-center mb-4" role="alert" style="border-radius:12px; background:#fef2f2; color:#991b1b;">
+            <span class="fs-5 me-2">✕</span>
+            <div>@TempData["Hata"]</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- İÇERİK IZGARASI -->
+    <div class="row g-4">
+
+        <!-- SOL: Tablo ve Filtre -->
+        <div class="col-lg-8">
+            <div class="panel-card">
+                <div class="panel-header">
+                    <span class="panel-title">📚 Açılan Dönem Dersleri</span>
+                    <span class="badge bg-light text-dark border font-monospace">@Model.Count Şube</span>
+                </div>
+
+                <!-- ARAMA VE CASCADE FİLTRE BAR -->
+                <div class="filter-bar">
+                    <form asp-action="AcilanDersYonetimi" asp-controller="Admin" method="get" class="d-flex flex-wrap gap-2 w-100 m-0">
+                        <select name="donemId" class="form-select form-select-sm" style="max-width:180px;" onchange="this.form.submit();">
+                            <option value="">-- Tüm Dönemler --</option>
+                            @foreach (var dn in donemler)
+                            {
+                                string dnGoster = dn.Donem1 == "Guz" ? "Güz" : dn.Donem1;
+                                string adGoster = $"{dn.AkademikYil} - {dnGoster}";
+                                if (seciliDonemId == dn.Id)
+                                {
+                                    <option value="@dn.Id" selected>@adGoster</option>
+                                }
+                                else
+                                {
+                                    <option value="@dn.Id">@adGoster</option>
+                                }
+                            }
+                        </select>
+
+                        <select name="fakulteId" class="form-select form-select-sm" style="max-width:170px;" onchange="this.form.submit();">
+                            <option value="">-- Tüm Fakülteler --</option>
+                            @foreach (var f in fakulteler)
+                            {
+                                if (seciliFakulteId == f.Id)
+                                {
+                                    <option value="@f.Id" selected>@f.Adi</option>
+                                }
+                                else
+                                {
+                                    <option value="@f.Id">@f.Adi</option>
+                                }
+                            }
+                        </select>
+
+                        <select name="bolumId" class="form-select form-select-sm" style="max-width:170px;" onchange="this.form.submit();">
+                            <option value="">-- Tüm Bölümler --</option>
+                            @foreach (var b in bolumler.Where(x => !seciliFakulteId.HasValue || x.UstOrganizasyonId == seciliFakulteId.Value))
+                            {
+                                if (seciliBolumId == b.Id)
+                                {
+                                    <option value="@b.Id" selected>@b.Adi</option>
+                                }
+                                else
+                                {
+                                    <option value="@b.Id">@b.Adi</option>
+                                }
+                            }
+                        </select>
+
+                        <div class="input-group input-group-sm" style="max-width:210px;">
+                            <input type="text" name="arama" class="form-control" placeholder="Ders, Hoca veya Şube..." value="@arama" />
+                            <button type="submit" class="btn btn-outline-secondary">🔍</button>
+                        </div>
+
+                        @if (seciliDonemId.HasValue || seciliFakulteId.HasValue || seciliBolumId.HasValue || !string.IsNullOrWhiteSpace(arama))
+                        {
+                            <a asp-action="AcilanDersYonetimi" asp-controller="Admin" class="btn btn-sm btn-outline-danger d-flex align-items-center">
+                                ✕ Temizle
+                            </a>
+                        }
+                    </form>
+                </div>
+
+                <div>
+                    @if (!Model.Any())
+                    {
+                        <div class="empty-state">
+                            <div class="icon">📭</div>
+                            <p class="fw-semibold">Açılan ders şubesi bulunamadı.</p>
+                            <p class="small text-muted mt-1">Seçili döneme veya filtrelere uygun açılan bir ders şubesi yoktur.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>Ders & Bölüm</th>
+                                        <th>Dönem & Şube</th>
+                                        <th>Öğretim Üyesi</th>
+                                        <th>Kontenjan</th>
+                                        <th>Durum</th>
+                                        <th class="text-end">İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var a in Model)
+                                    {
+                                        string stClass = (a.Durum == "Aktif" || string.IsNullOrWhiteSpace(a.Durum)) ? "aktif" : "pasif";
+                                        string stText = (a.Durum == "Aktif" || string.IsNullOrWhiteSpace(a.Durum)) ? "Aktif" : "Pasif";
+                                        int kayitliSayisi = a.DersKaydis.Count;
+                                        int kont = a.Kontenjan > 0 ? a.Kontenjan : 1;
+                                        int yuzde = Math.Min(100, (int)((kayitliSayisi * 100.0) / kont));
+
+                                        <tr>
+                                            <td>
+                                                <div class="fw-bold text-dark">@(a.Ders?.DersKodu ?? "—") - @(a.Ders?.DersAdi ?? "—")</div>
+                                                <div class="small text-muted" style="font-size:0.75rem;">@(a.Ders?.Organizasyon?.Adi ?? "—")</div>
+                                            </td>
+                                            <td>
+                                                <div class="mb-1">
+                                                    <span class="donem-badge">@(a.Donem != null ? $"{a.Donem.AkademikYil} {(a.Donem.Donem1 == "Guz" ? "Güz" : a.Donem.Donem1)}" : "—")</span>
+                                                </div>
+                                                <span class="sube-badge">Şube: @a.SubeNo</span>
+                                            </td>
+                                            <td>
+                                                @{
+                                                    var hoca = a.OgretimUyesi;
+                                                    var hocaAd = hoca?.Kullanici != null ? $"{hoca.Unvan} {hoca.Kullanici.Ad} {hoca.Kullanici.Soyad}".Trim() : "Atanmadı";
+                                                }
+                                                <div class="fw-600 text-dark small">@hocaAd</div>
+                                                <div class="small text-muted" style="font-size:0.72rem;">@(hoca?.Organizasyon?.Adi ?? "—")</div>
+                                            </td>
+                                            <td>
+                                                <div class="small fw-bold text-dark">@kayitliSayisi / @a.Kontenjan Öğrenci</div>
+                                                <div class="kontenjan-bar">
+                                                    <div class="kontenjan-bar-fill" style="width: @(yuzde)%;"></div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="status-badge @stClass">
+                                                    <span class="dot @stClass"></span>
+                                                    @stText
+                                                </span>
+                                            </td>
+                                            <td class="text-end">
+                                                <div class="d-inline-flex gap-1">
+                                                    <form asp-action="AcilanDersDurumDegistir" asp-controller="Admin" method="post" class="m-0">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@a.Id" />
+                                                        <input type="hidden" name="geriDonDonemId" value="@seciliDonemId" />
+                                                        <input type="hidden" name="geriDonFakulteId" value="@seciliFakulteId" />
+                                                        <input type="hidden" name="geriDonBolumId" value="@seciliBolumId" />
+                                                        <button type="submit" class="btn-action btn-primary-soft" title="Aktif / Pasif durumunu değiştir">
+                                                            @((a.Durum == "Aktif" || string.IsNullOrWhiteSpace(a.Durum)) ? "⏸" : "▶")
+                                                        </button>
+                                                    </form>
+
+                                                    <form asp-action="AcilanDersSil" asp-controller="Admin" method="post" class="m-0"
+                                                          onsubmit="return confirm('@(a.Ders?.DersKodu) (Şube @a.SubeNo) ders şubesini silmek istediğinize emin misiniz?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@a.Id" />
+                                                        <input type="hidden" name="geriDonDonemId" value="@seciliDonemId" />
+                                                        <input type="hidden" name="geriDonFakulteId" value="@seciliFakulteId" />
+                                                        <input type="hidden" name="geriDonBolumId" value="@seciliBolumId" />
+                                                        <button type="submit" class="btn-action btn-danger-soft" title="Şubeyi Sil">
+                                                            🗑️
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- SAĞ: Yeni Ders Şubesi Açma Formu -->
+        <div class="col-lg-4">
+            <div class="panel-card">
+                <div class="panel-header">
+                    <span class="panel-title">➕ Yeni Dönem Şubesi Aç</span>
+                </div>
+                <div class="p-4">
+                    <form asp-action="AcilanDersEkle" asp-controller="Admin" method="post" id="acilanDersEkleForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="geriDonDonemId" value="@seciliDonemId" />
+                        <input type="hidden" name="geriDonFakulteId" value="@seciliFakulteId" />
+                        <input type="hidden" name="geriDonBolumId" value="@seciliBolumId" />
+
+                        <!-- 1. Dönem Seçimi -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted mb-1">Akademik Dönem <span class="text-danger">*</span></label>
+                            <select name="donemId" id="formDonemSelect" class="form-select" required>
+                                <option value="">-- Dönem Seçiniz --</option>
+                                @foreach (var dn in donemler)
+                                {
+                                    string dnGoster = dn.Donem1 == "Guz" ? "Güz" : dn.Donem1;
+                                    string adGoster = $"{dn.AkademikYil} - {dnGoster}";
+                                    bool selected = seciliDonemId == dn.Id;
+                                    if (selected)
+                                    {
+                                        <option value="@dn.Id" selected>@adGoster</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@dn.Id">@adGoster</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <!-- 2. Fakülte & Bölüm Filtresi (Ders Seçimini Kolaylaştırma) -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted mb-1">Fakülte & Bölüm (Ders Daralt)</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <select id="formFakulteSelect" class="form-select form-select-sm">
+                                        <option value="">Tüm Fakülteler</option>
+                                        @foreach (var f in fakulteler)
+                                        {
+                                            if (seciliFakulteId == f.Id)
+                                            {
+                                                <option value="@f.Id" selected>@f.Adi</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@f.Id">@f.Adi</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <select id="formBolumSelect" class="form-select form-select-sm">
+                                        <option value="">Tüm Bölümler</option>
+                                        @foreach (var b in bolumler)
+                                        {
+                                            if (seciliBolumId == b.Id)
+                                            {
+                                                <option value="@b.Id" data-fakulte-id="@b.UstOrganizasyonId" selected>@b.Adi</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@b.Id" data-fakulte-id="@b.UstOrganizasyonId">@b.Adi</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Ders Seçimi -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted mb-1">Açılacak Ders <span class="text-danger">*</span></label>
+                            <select name="dersId" id="formDersSelect" class="form-select" required>
+                                <option value="">-- Ders Seçiniz --</option>
+                                @foreach (var d in tumDersler)
+                                {
+                                    <option value="@d.Id"
+                                            data-bolum-id="@d.OrganizasyonId"
+                                            data-fakulte-id="@(d.Organizasyon?.UstOrganizasyonId)">
+                                        @d.DersKodu - @d.DersAdi (@d.Organizasyon?.Adi)
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- 4. Öğretim Üyesi -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted mb-1">Öğretim Üyesi (Dersi Verecek Hoca) <span class="text-danger">*</span></label>
+                            <select name="ogretimUyesiId" id="formHocaSelect" class="form-select" required>
+                                <option value="">-- Öğretim Üyesi Seçiniz --</option>
+                                @foreach (var h in ogretimUyeleri)
+                                {
+                                    var tamAd = $"{h.Unvan} {h.Kullanici?.Ad} {h.Kullanici?.Soyad}".Trim();
+                                    <option value="@h.Id" data-bolum-id="@h.OrganizasyonId">
+                                        @tamAd (@h.Organizasyon?.Adi)
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- 5. Şube ve Kontenjan -->
+                        <div class="row g-2 mb-4">
+                            <div class="col-6">
+                                <label class="form-label fw-bold small text-muted mb-1">Şube No <span class="text-danger">*</span></label>
+                                <input type="text" name="subeNo" id="formSubeNoInput" class="form-control font-monospace text-uppercase"
+                                       value="A" maxlength="5" required />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold small text-muted mb-1">Kontenjan <span class="text-danger">*</span></label>
+                                <input type="number" name="kontenjan" class="form-control"
+                                       value="50" min="1" max="500" required />
+                            </div>
+                        </div>
+
+                        <div id="subeKontrolHint" style="font-size:0.78rem; margin-bottom:12px; min-height:18px;"></div>
+
+                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2" id="acilanDersEkleBtn">
+                            ➕ Şubeyi Aç ve Kaydet
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    'use strict';
+
+    // 1. FAKÜLTE - BÖLÜM - DERS CASCADING FİLTRELEME
+    const formFakulte = document.getElementById('formFakulteSelect');
+    const formBolum   = document.getElementById('formBolumSelect');
+    const formDers    = document.getElementById('formDersSelect');
+
+    function filterBolumler() {
+        if (!formFakulte || !formBolum) return;
+        const selFak = formFakulte.value;
+        formBolum.querySelectorAll('option[data-fakulte-id]').forEach(opt => {
+            if (!selFak || opt.getAttribute('data-fakulte-id') === selFak) {
+                opt.style.display = '';
+                opt.disabled = false;
+            } else {
+                opt.style.display = 'none';
+                opt.disabled = true;
+            }
+        });
+        if (formBolum.selectedOptions[0] && formBolum.selectedOptions[0].disabled) {
+            formBolum.value = '';
+        }
+        filterDersler();
+    }
+
+    function filterDersler() {
+        if (!formDers) return;
+        const selFak   = formFakulte ? formFakulte.value : '';
+        const selBolum = formBolum ? formBolum.value : '';
+
+        formDers.querySelectorAll('option[data-bolum-id]').forEach(opt => {
+            const dBolum   = opt.getAttribute('data-bolum-id');
+            const dFakulte = opt.getAttribute('data-fakulte-id');
+
+            let show = true;
+            if (selBolum && dBolum !== selBolum) show = false;
+            else if (selFak && dFakulte !== selFak) show = false;
+
+            if (show) {
+                opt.style.display = '';
+                opt.disabled = false;
+            } else {
+                opt.style.display = 'none';
+                opt.disabled = true;
+            }
+        });
+
+        if (formDers.selectedOptions[0] && formDers.selectedOptions[0].disabled) {
+            formDers.value = '';
+        }
+    }
+
+    if (formFakulte) formFakulte.addEventListener('change', filterBolumler);
+    if (formBolum) formBolum.addEventListener('change', filterDersler);
+    filterBolumler();
+
+    // 2. AJAX ÇAKIŞMA KONTROLÜ (Ders + Dönem + ŞubeNo benzersiz mi?)
+    const donemSel = document.getElementById('formDonemSelect');
+    const dersSel  = document.getElementById('formDersSelect');
+    const subeInp  = document.getElementById('formSubeNoInput');
+    const hint     = document.getElementById('subeKontrolHint');
+    const submitBtn= document.getElementById('acilanDersEkleBtn');
+
+    let debounceTimer = null;
+
+    function kontrolEt() {
+        if (!dersSel || !donemSel || !subeInp || !hint || !submitBtn) return;
+
+        const dersId  = dersSel.value;
+        const donemId = donemSel.value;
+        const subeNo  = subeInp.value.trim().toUpperCase();
+
+        if (!dersId || !donemId || !subeNo) {
+            hint.textContent = '';
+            submitBtn.disabled = false;
+            return;
+        }
+
+        hint.style.color = '#64748b';
+        hint.textContent = '⏳ Şube kontrol ediliyor…';
+
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            fetch(`/Admin/AcilanDersKontrol?dersId=${dersId}&donemId=${donemId}&subeNo=${encodeURIComponent(subeNo)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.kullanildi) {
+                        hint.style.color = '#dc2626';
+                        hint.textContent = `✗ Bu dersin '${subeNo}' şubesi bu dönemde zaten açılmış.`;
+                        subeInp.style.borderColor = '#ef4444';
+                        submitBtn.disabled = true;
+                    } else {
+                        hint.style.color = '#059669';
+                        hint.textContent = `✓ '${subeNo}' şubesi açılabilir.`;
+                        subeInp.style.borderColor = '#10b981';
+                        submitBtn.disabled = false;
+                    }
+                })
+                .catch(() => {
+                    hint.textContent = '';
+                    submitBtn.disabled = false;
+                });
+        }, 300);
+    }
+
+    if (dersSel)  dersSel.addEventListener('change', kontrolEt);
+    if (donemSel) donemSel.addEventListener('change', kontrolEt);
+    if (subeInp) {
+        subeInp.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+            kontrolEt();
+        });
+    }
+
+})();
+</script>
+}
