@@ -1676,5 +1676,189 @@ public class AdminController : Controller
         var kullanildi = await sorgu.AnyAsync();
         return Json(new { kullanildi });
     }
+
+    // =========================================================================
+    // DERSLİK & SALON YÖNETİMİ (Salon)
+    // =========================================================================
+
+    // GET: /Admin/SalonYonetimi
+    public async Task<IActionResult> SalonYonetimi(int? binaId, string? arama)
+    {
+        var binalar = await _context.Salons
+            .Where(s => s.BinaId == null)
+            .OrderBy(s => s.SalonAdi)
+            .ToListAsync();
+
+        var query = _context.Salons
+            .Include(s => s.Bina)
+            .Include(s => s.DersProgramis)
+            .Include(s => s.SinavProgramis)
+            .Include(s => s.InverseBina) // Binaların içindeki salonlar için
+            .AsQueryable();
+
+        if (binaId.HasValue && binaId.Value > 0)
+        {
+            // Sadece seçili bina ve o binanın içindeki salonları getir
+            query = query.Where(s => s.Id == binaId.Value || s.BinaId == binaId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(arama))
+        {
+            var a = arama.Trim().ToLower();
+            query = query.Where(s => s.SalonAdi.ToLower().Contains(a) ||
+                                     s.SalonTipi.ToLower().Contains(a) ||
+                                     (s.Bina != null && s.Bina.SalonAdi.ToLower().Contains(a)));
+        }
+
+        var salonlar = await query
+            .OrderBy(s => s.BinaId == null ? 0 : 1)
+            .ThenBy(s => s.Bina != null ? s.Bina.SalonAdi : s.SalonAdi)
+            .ThenBy(s => s.SalonAdi)
+            .ToListAsync();
+
+        ViewBag.Binalar = binalar;
+        ViewBag.SeciliBinaId = binaId;
+        ViewBag.Arama = arama;
+
+        return View(salonlar);
+    }
+
+    // POST: /Admin/BinaEkle
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> BinaEkle(string binaAdi)
+    {
+        if (string.IsNullOrWhiteSpace(binaAdi))
+        {
+            TempData["Hata"] = "Bina adı boş olamaz.";
+            return RedirectToAction(nameof(SalonYonetimi));
+        }
+
+        binaAdi = binaAdi.Trim();
+
+        if (await _context.Salons.AnyAsync(s => s.BinaId == null && s.SalonAdi == binaAdi))
+        {
+            TempData["Hata"] = $"'{binaAdi}' adında bir bina zaten mevcut.";
+            return RedirectToAction(nameof(SalonYonetimi));
+        }
+
+        var yeniBina = new Salon
+        {
+            BinaId = null,
+            SalonTipi = "Bina",
+            SalonAdi = binaAdi,
+            Kapasite = null
+        };
+
+        try
+        {
+            _context.Salons.Add(yeniBina);
+            await _context.SaveChangesAsync();
+            TempData["Basari"] = $"'{binaAdi}' binası sisteme eklendi.";
+        }
+        catch (Exception)
+        {
+            TempData["Hata"] = "Bina eklenirken hata oluştu.";
+        }
+
+        return RedirectToAction(nameof(SalonYonetimi));
+    }
+
+    // POST: /Admin/SalonEkle
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SalonEkle(int binaId, string salonTipi, string salonAdi, short kapasite, int? geriDonBinaId)
+    {
+        if (binaId <= 0 || string.IsNullOrWhiteSpace(salonAdi) || string.IsNullOrWhiteSpace(salonTipi))
+        {
+            TempData["Hata"] = "Bina, Salon Tipi ve Salon Adı alanları zorunludur.";
+            return RedirectToAction(nameof(SalonYonetimi), new { binaId = geriDonBinaId });
+        }
+
+        salonAdi = salonAdi.Trim();
+        if (kapasite < 1) kapasite = 30; // Varsayılan
+
+        if (await _context.Salons.AnyAsync(s => s.BinaId == binaId && s.SalonAdi == salonAdi))
+        {
+            var bina = await _context.Salons.FindAsync(binaId);
+            TempData["Hata"] = $"'{bina?.SalonAdi}' binasında '{salonAdi}' adında bir salon zaten kayıtlı.";
+            return RedirectToAction(nameof(SalonYonetimi), new { binaId = geriDonBinaId });
+        }
+
+        var yeniSalon = new Salon
+        {
+            BinaId = binaId,
+            SalonTipi = salonTipi,
+            SalonAdi = salonAdi,
+            Kapasite = kapasite
+        };
+
+        try
+        {
+            _context.Salons.Add(yeniSalon);
+            await _context.SaveChangesAsync();
+            var bina = await _context.Salons.FindAsync(binaId);
+            TempData["Basari"] = $"'{bina?.SalonAdi}' binasına '{salonAdi}' başarıyla eklendi.";
+        }
+        catch (Exception)
+        {
+            TempData["Hata"] = "Salon eklenirken hata oluştu.";
+        }
+
+        return RedirectToAction(nameof(SalonYonetimi), new { binaId = geriDonBinaId });
+    }
+
+    // POST: /Admin/SalonSil
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SalonSil(int id, int? geriDonBinaId)
+    {
+        var salon = await _context.Salons
+            .Include(s => s.InverseBina)
+            .Include(s => s.DersProgramis)
+            .Include(s => s.SinavProgramis)
+            .FirstOrDefaultAsync(s => s.Id == id);
+
+        if (salon == null)
+        {
+            TempData["Hata"] = "Silinmek istenen kayıt bulunamadı.";
+            return RedirectToAction(nameof(SalonYonetimi), new { binaId = geriDonBinaId });
+        }
+
+        // Eğer bina ise ve içinde salon varsa silinemez
+        if (salon.BinaId == null && salon.InverseBina.Any())
+        {
+            TempData["Hata"] = $"'{salon.SalonAdi}' binasına bağlı {salon.InverseBina.Count} adet salon bulunmaktadır. Silmeden önce binadaki salonları siliniz veya taşıyınız.";
+            return RedirectToAction(nameof(SalonYonetimi), new { binaId = geriDonBinaId });
+        }
+
+        // Eğer ders/sınav programında kullanılmışsa silinemez
+        if (salon.DersProgramis.Any() || salon.SinavProgramis.Any())
+        {
+            TempData["Hata"] = $"'{salon.SalonAdi}' ders veya sınav programlarında kullanıldığı için silinemez.";
+            return RedirectToAction(nameof(SalonYonetimi), new { binaId = geriDonBinaId });
+        }
+
+        var isim = salon.SalonAdi;
+        var tip = salon.BinaId == null ? "Binası" : "Salonu";
+
+        _context.Salons.Remove(salon);
+        await _context.SaveChangesAsync();
+
+        TempData["Basari"] = $"'{isim}' {tip} sistemden silindi.";
+        return RedirectToAction(nameof(SalonYonetimi), new { binaId = geriDonBinaId });
+    }
+
+    // GET: /Admin/SalonAdiKontrol (AJAX)
+    [HttpGet]
+    public async Task<IActionResult> SalonAdiKontrol(int? binaId, string salonAdi)
+    {
+        if (string.IsNullOrWhiteSpace(salonAdi))
+            return Json(new { kullanildi = false });
+
+        salonAdi = salonAdi.Trim();
+        var kullanildi = await _context.Salons.AnyAsync(s => s.BinaId == binaId && s.SalonAdi == salonAdi);
+        return Json(new { kullanildi });
+    }
 }
 
