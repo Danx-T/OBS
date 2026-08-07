@@ -2032,5 +2032,149 @@ public class AdminController : Controller
             .ToListAsync();
         return Json(dersler);
     }
+
+    // ==========================================
+    // SINAV PROGRAMI YÖNETİMİ
+    // ==========================================
+
+    [HttpGet]
+    public async Task<IActionResult> SinavProgramiYonetimi(int? donemId, int? fakulteId, int? bolumId)
+    {
+        var donemler = await _context.Donems.OrderByDescending(d => d.AkademikYil).ThenBy(d => d.Donem1).ToListAsync();
+        var fakulteler = await _context.Organizasyons.Where(o => o.UstOrganizasyonId == null).OrderBy(o => o.Adi).ToListAsync();
+
+        int seciliDonemId = donemId ?? donemler.FirstOrDefault()?.Id ?? 0;
+        int seciliFakulteId = fakulteId ?? 0;
+
+        var bolumler = new List<Organizasyon>();
+        if (seciliFakulteId != 0)
+        {
+            bolumler = await _context.Organizasyons.Where(o => o.UstOrganizasyonId == seciliFakulteId).OrderBy(o => o.Adi).ToListAsync();
+        }
+        
+        int seciliBolumId = bolumId ?? 0;
+
+        var program = new List<SinavProgrami>();
+        var acilanDersler = new List<AcilanDer>();
+
+        if (seciliBolumId != 0)
+        {
+            program = await _context.SinavProgramis
+                .Include(sp => sp.AcilanDers)
+                    .ThenInclude(ad => ad.Ders)
+                .Include(sp => sp.AcilanDers)
+                    .ThenInclude(ad => ad.OgretimUyesi)
+                        .ThenInclude(ou => ou.Kullanici)
+                .Include(sp => sp.Salon)
+                    .ThenInclude(s => s.Bina)
+                .Where(sp => sp.AcilanDers.DonemId == seciliDonemId && sp.AcilanDers.Ders.OrganizasyonId == seciliBolumId)
+                .OrderBy(sp => sp.Baslangic)
+                .ToListAsync();
+
+            acilanDersler = await _context.AcilanDers
+                .Include(ad => ad.Ders)
+                .Include(ad => ad.OgretimUyesi)
+                    .ThenInclude(ou => ou.Kullanici)
+                .Where(ad => ad.DonemId == seciliDonemId && ad.Ders.OrganizasyonId == seciliBolumId)
+                .OrderBy(ad => ad.Ders.DersKodu)
+                .ToListAsync();
+        }
+
+        var salonlar = await _context.Salons
+            .Include(s => s.Bina)
+            .Where(s => s.BinaId != null) // Sadece sınıfları/amfileri getir
+            .OrderBy(s => s.Bina!.SalonAdi).ThenBy(s => s.SalonAdi)
+            .ToListAsync();
+
+        ViewBag.Donemler = donemler;
+        ViewBag.Fakulteler = fakulteler;
+        ViewBag.Bolumler = bolumler;
+        ViewBag.SeciliDonemId = seciliDonemId;
+        ViewBag.SeciliFakulteId = seciliFakulteId;
+        ViewBag.SeciliBolumId = seciliBolumId;
+        ViewBag.AcilanDersler = acilanDersler;
+        ViewBag.Salonlar = salonlar;
+
+        return View(program);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SinavProgramiEkle(int acilanDersId, int salonId, string sinavTipi, DateTime baslangic, DateTime bitis, int donemId, int bolumId)
+    {
+        var acilanDers = await _context.AcilanDers
+            .Include(ad => ad.Ders)
+                .ThenInclude(d => d.Organizasyon)
+            .Include(ad => ad.OgretimUyesi)
+                .ThenInclude(ou => ou.Kullanici)
+            .FirstOrDefaultAsync(ad => ad.Id == acilanDersId);
+
+        if (acilanDers == null) return NotFound();
+
+        if (baslangic >= bitis)
+        {
+            TempData["Hata"] = "Bitiş saati, başlangıç saatinden sonra olmalıdır.";
+            return RedirectToAction(nameof(SinavProgramiYonetimi), new { donemId, fakulteId = acilanDers.Ders.Organizasyon.UstOrganizasyonId, bolumId });
+        }
+
+        // 1. Aynı ders için aynı tip sınav zaten var mı?
+        bool ayniSinavVar = await _context.SinavProgramis
+            .AnyAsync(sp => sp.AcilanDersId == acilanDersId && sp.SinavTipi == sinavTipi);
+        
+        if(ayniSinavVar)
+        {
+            TempData["Hata"] = $"Bu ders için zaten bir '{sinavTipi}' tanımlanmış.";
+            return RedirectToAction(nameof(SinavProgramiYonetimi), new { donemId, fakulteId = acilanDers.Ders.Organizasyon.UstOrganizasyonId, bolumId });
+        }
+
+        // 2. Salon Çakışma Kontrolü
+        var salonCakismasi = await _context.SinavProgramis
+            .Include(sp => sp.AcilanDers)
+                .ThenInclude(ad => ad.Ders)
+            .FirstOrDefaultAsync(sp => sp.SalonId == salonId &&
+                                       baslangic < sp.Bitis && bitis > sp.Baslangic);
+
+        if (salonCakismasi != null)
+        {
+            TempData["Hata"] = $"Çakışma: Seçilen salonda bu saatlerde '{salonCakismasi.AcilanDers.Ders.DersKodu}' dersinin {salonCakismasi.SinavTipi} sınavı yapılmaktadır.";
+            return RedirectToAction(nameof(SinavProgramiYonetimi), new { donemId, fakulteId = acilanDers.Ders.Organizasyon.UstOrganizasyonId, bolumId });
+        }
+
+        var yeniProgram = new SinavProgrami
+        {
+            AcilanDersId = acilanDersId,
+            SalonId = salonId,
+            SinavTipi = sinavTipi,
+            Baslangic = baslangic,
+            Bitis = bitis
+        };
+
+        _context.SinavProgramis.Add(yeniProgram);
+        await _context.SaveChangesAsync();
+
+        TempData["Basari"] = $"{acilanDers.Ders.DersKodu} dersi için {sinavTipi} programa eklendi.";
+        return RedirectToAction(nameof(SinavProgramiYonetimi), new { donemId, fakulteId = acilanDers.Ders.Organizasyon.UstOrganizasyonId, bolumId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SinavProgramiSil(int id, int donemId, int bolumId)
+    {
+        var program = await _context.SinavProgramis
+            .Include(sp => sp.AcilanDers)
+                .ThenInclude(ad => ad.Ders)
+                    .ThenInclude(d => d.Organizasyon)
+            .FirstOrDefaultAsync(sp => sp.Id == id);
+            
+        if (program != null)
+        {
+            var isim = program.AcilanDers.Ders.DersKodu;
+            var tip = program.SinavTipi;
+            _context.SinavProgramis.Remove(program);
+            await _context.SaveChangesAsync();
+            TempData["Basari"] = $"'{isim}' dersinin '{tip}' kaydı silindi.";
+        }
+        return RedirectToAction(nameof(SinavProgramiYonetimi), new { donemId, fakulteId = program?.AcilanDers?.Ders?.Organizasyon?.UstOrganizasyonId, bolumId });
+    }
 }
 
