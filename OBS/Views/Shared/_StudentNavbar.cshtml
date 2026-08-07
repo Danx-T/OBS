@@ -1,0 +1,50 @@
+@{
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+}
+
+    <aside class="bg-dark text-white p-3 position-fixed top-0 start-0 bottom-0 d-flex flex-column" style="width: 240px; z-index: 1050;">
+        <div class="mb-4 px-2">
+            <span class="fs-5 fw-bold text-white">Öğrenci Paneli</span>
+        </div>
+
+        <ul class="nav nav-pills flex-column mb-auto gap-1">
+            <li class="nav-item">
+                <a asp-controller="Student" asp-action="Index" class="nav-link text-white @(action == "Index" ? "active bg-primary" : "")">
+                    🏠 Ana Sayfa
+                </a>
+            </li>
+            <li class="nav-item">
+                <a asp-controller="Student" asp-action="CourseRegistration" class="nav-link text-white @(action == "CourseRegistration" ? "active bg-primary" : "")">
+                    📝 Ders Kayıt İşlemleri
+                </a>
+            </li>
+            <li class="nav-item">
+                <a asp-controller="Student" asp-action="Schedule" class="nav-link text-white @(action == "Schedule" ? "active bg-primary" : "")">
+                    📅 Ders Programı
+                </a>
+            </li>
+            <li class="nav-item">
+                <a asp-controller="Student" asp-action="Exams" class="nav-link text-white @(action == "Exams" ? "active bg-primary" : "")">
+                    📝 Sınav Programı
+                </a>
+            </li>
+            <li class="nav-item">
+                <a asp-controller="Student" asp-action="Grades" class="nav-link text-white @(action == "Grades" ? "active bg-primary" : "")">
+                    📊 Not Bilgileri
+                </a>
+            </li>
+            <li class="nav-item">
+                <a asp-controller="Student" asp-action="Transcript" class="nav-link text-white @(action == "Transcript" ? "active bg-primary" : "")">
+                    🎓 Transkript
+                </a>
+            </li>
+        </ul>
+
+        <div class="border-top border-secondary pt-3 px-2 d-flex align-items-center justify-content-between">
+            <span class="small text-light text-truncate" style="max-width: 140px;">@User.Identity!.Name</span>
+            <form asp-action="Logout" asp-controller="Auth" method="post" class="m-0">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-sm btn-outline-danger">Çıkış</button>
+            </form>
+        </div>
+    </aside>

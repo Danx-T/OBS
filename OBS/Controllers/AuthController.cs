@@ -114,7 +114,7 @@ public class AuthController : Controller
         if (isAdmin)
             return RedirectToAction("KullaniciOlustur", "Admin");
 
-        return RedirectToAction("Index", "Home");
+        return RedirectToAction("Index", "Student");
     }
 
     // GET: /Auth/Verify2FA
@@ -303,6 +303,12 @@ public class AuthController : Controller
         foreach (var kr in roller)
         {
             claims.Add(new Claim(ClaimTypes.Role, kr.Rol.RolAdi));
+        }
+
+        bool isOgrenci = await _context.Ogrencis.AnyAsync(o => o.KullaniciId == kullanici.Id);
+        if (isOgrenci)
+        {
+            claims.Add(new Claim("UserType", "Ogrenci"));
         }
 
         var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

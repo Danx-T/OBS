@@ -23,11 +23,20 @@
 @inject IAuthorizationService AuthorizationService
 @{
     var isAdmin = (await AuthorizationService.AuthorizeAsync(User, null, new Microsoft.AspNetCore.Authorization.Infrastructure.RolesAuthorizationRequirement(new[] { "Admin" }))).Succeeded;
+    var isOgrenci = User.HasClaim("UserType", "Ogrenci");
+    var hasSidebar = isAdmin || isOgrenci;
 }
 <body>
-    @await Html.PartialAsync("_AdminNavbar")
+    @if (isAdmin)
+    {
+        @await Html.PartialAsync("_AdminNavbar")
+    }
+    else if (isOgrenci)
+    {
+        @await Html.PartialAsync("_StudentNavbar")
+    }
 
-    <div class="@(isAdmin ? "ms-auto" : "container")" style="@(isAdmin ? "margin-left: 250px !important; padding: 20px;" : "")">
+    <div class="@(hasSidebar ? "ms-auto" : "container")" style="@(hasSidebar ? "margin-left: 250px !important; padding: 20px;" : "")">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>

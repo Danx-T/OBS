@@ -8,6 +8,13 @@ namespace OBS.Controllers
     {
         public IActionResult Index()
         {
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                if (User.IsInRole("Admin"))
+                    return RedirectToAction("KullaniciOlustur", "Admin");
+                else if (User.HasClaim("UserType", "Ogrenci"))
+                    return RedirectToAction("Index", "Student");
+            }
             return View();
         }
 
