@@ -1,0 +1,416 @@
+@model List<OBS.Models.DersProgrami>
+@{
+    ViewData["Title"] = "Haftalık Ders Programı";
+    var donemler = ViewBag.Donemler as List<OBS.Models.Donem> ?? new List<OBS.Models.Donem>();
+    var fakulteler = ViewBag.Fakulteler as List<OBS.Models.Organizasyon> ?? new List<OBS.Models.Organizasyon>();
+    var bolumler = ViewBag.Bolumler as List<OBS.Models.Organizasyon> ?? new List<OBS.Models.Organizasyon>();
+    int seciliDonemId = ViewBag.SeciliDonemId;
+    int seciliFakulteId = ViewBag.SeciliFakulteId;
+    int seciliBolumId = ViewBag.SeciliBolumId;
+    
+    var acilanDersler = ViewBag.AcilanDersler as List<OBS.Models.AcilanDer> ?? new List<OBS.Models.AcilanDer>();
+    var salonlar = ViewBag.Salonlar as List<OBS.Models.Salon> ?? new List<OBS.Models.Salon>();
+    
+    var gunler = new Dictionary<string, string> {
+        { "Pazartesi", "Pazartesi" },
+        { "Sali", "Salı" },
+        { "Carsamba", "Çarşamba" },
+        { "Persembe", "Perşembe" },
+        { "Cuma", "Cuma" },
+        { "Cumartesi", "Cumartesi" },
+        { "Pazar", "Pazar" }
+    };
+}
+
+<style>
+    :root {
+        --primary: #4338ca;
+        --primary-light: #e0e7ff;
+        --secondary: #64748b;
+        --success: #10b981;
+        --danger: #ef4444;
+        --bg: #f8fafc;
+        --card-bg: rgba(255, 255, 255, 0.95);
+        --muted: #94a3b8;
+    }
+    
+    .schedule-wrap {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 20px;
+        align-items: start;
+        margin-top: 15px;
+    }
+
+    .glass-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255,255,255,0.4);
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+        padding: 24px;
+    }
+
+    .page-header-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        padding: 24px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+    
+    .page-header-card h1 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 5px 0;
+    }
+    
+    .page-header-card p {
+        margin: 0;
+        color: var(--secondary);
+        font-size: 0.95rem;
+    }
+
+    .day-header {
+        background: #f1f5f9;
+        font-weight: 700;
+        color: #334155;
+        padding: 10px 15px;
+        border-radius: 8px;
+        margin-top: 15px;
+        margin-bottom: 10px;
+    }
+
+    .schedule-card {
+        background: white;
+        border-radius: 10px;
+        padding: 12px 16px;
+        border-left: 4px solid var(--primary);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: transform 0.2s;
+    }
+    .schedule-card:hover {
+        transform: translateX(4px);
+    }
+
+    .time-badge {
+        background: #e0e7ff;
+        color: #4338ca;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        margin-right: 15px;
+        display: inline-block;
+        min-width: 100px;
+        text-align: center;
+    }
+
+    .course-info {
+        flex-grow: 1;
+    }
+    .course-title {
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 2px;
+    }
+    .course-meta {
+        font-size: 0.8rem;
+        color: var(--muted);
+    }
+    
+    .room-badge {
+        background: #fce7f3;
+        color: #be185d;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        transition: all 0.2s;
+        background: #fef2f2;
+        color: var(--danger);
+        cursor: pointer;
+    }
+    .btn-action:hover { background: var(--danger); color: white; }
+
+    /* Filters */
+    .filter-bar {
+        background: white;
+        padding: 15px 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        margin-bottom: 20px;
+    }
+</style>
+
+<div class="page-header-card">
+    <div>
+        <h1>📅 Haftalık Ders Programı</h1>
+        <p>Açılan dersleri sınıflara ve saatlere atayın, çakışmaları yönetin.</p>
+    </div>
+</div>
+
+@if (TempData["Basari"] != null)
+{
+    <div class="alert alert-success border-0 shadow-sm rounded-3 mb-3">
+        ✅ @TempData["Basari"]
+    </div>
+}
+@if (TempData["Hata"] != null)
+{
+    <div class="alert alert-danger border-0 shadow-sm rounded-3 mb-3">
+        ⚠️ @TempData["Hata"]
+    </div>
+}
+
+<div class="filter-bar d-flex gap-3 align-items-center">
+    <form method="get" class="d-flex gap-3 m-0 w-100">
+        <div style="width: 250px;">
+            <select name="donemId" class="form-select form-select-sm" onchange="this.form.submit()">
+                @foreach (var d in donemler)
+                {
+                    if(d.Id == seciliDonemId){
+                        <option value="@d.Id" selected>@d.AkademikYil - @d.Donem1</option>
+                    }else{
+                        <option value="@d.Id">@d.AkademikYil - @d.Donem1</option>
+                    }
+                }
+            </select>
+        </div>
+        <div style="width: 250px;">
+            <select name="fakulteId" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">-- Fakülte Seçiniz --</option>
+                @foreach (var f in fakulteler)
+                {
+                    if(f.Id == seciliFakulteId){
+                        <option value="@f.Id" selected>@f.Adi</option>
+                    }else{
+                        <option value="@f.Id">@f.Adi</option>
+                    }
+                }
+            </select>
+        </div>
+        <div style="width: 300px;">
+            <select name="bolumId" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">-- Bölüm Seçiniz --</option>
+                @foreach (var b in bolumler)
+                {
+                    if(b.Id == seciliBolumId){
+                        <option value="@b.Id" selected>@b.Adi</option>
+                    }else{
+                        <option value="@b.Id">@b.Adi</option>
+                    }
+                }
+            </select>
+        </div>
+    </form>
+</div>
+
+<div class="schedule-wrap">
+    
+    <!-- SOL: Program Listesi -->
+    <div>
+        @if (seciliFakulteId == 0 || seciliBolumId == 0)
+        {
+            <div class="text-center py-5 text-muted glass-card">
+                <div class="fs-1 mb-3">👈</div>
+                <h5>Fakülte ve Bölüm Seçin</h5>
+                <p>Ders programını görüntülemek için lütfen yukarıdan bölüm seçimi yapın.</p>
+            </div>
+        }
+        else if (!Model.Any())
+        {
+            <div class="text-center py-5 text-muted glass-card">
+                <div class="fs-1 mb-3">📭</div>
+                <h5>Program Bulunamadı</h5>
+                <p>Seçilen dönem ve bölüm için henüz bir ders programı eklenmemiş.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var gun in gunler)
+            {
+                var gununDersleri = Model.Where(m => m.Gun == gun.Key).ToList();
+                if (gununDersleri.Any())
+                {
+                    <div class="day-header">@gun.Value</div>
+                    @foreach (var dp in gununDersleri)
+                    {
+                        <div class="schedule-card">
+                            <div class="d-flex align-items-center">
+                                <div class="time-badge">
+                                    @dp.BaslangicSaati.ToString("HH:mm") - @dp.BitisSaati.ToString("HH:mm")
+                                </div>
+                                <div class="course-info">
+                                    <div class="course-title">@dp.AcilanDers.Ders.DersKodu - @dp.AcilanDers.Ders.DersAdi</div>
+                                    <div class="course-meta">
+                                        👨‍🏫 @dp.AcilanDers.OgretimUyesi.Kullanici.Ad @dp.AcilanDers.OgretimUyesi.Kullanici.Soyad | Şube: @dp.AcilanDers.SubeNo
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="room-badge" title="@dp.Salon.Bina.SalonAdi">
+                                    🚪 @dp.Salon.SalonAdi
+                                </div>
+                                <form asp-action="DersProgramiSil" asp-controller="Admin" method="post" class="m-0"
+                                      onsubmit="return confirm('Bu ders programı kaydını silmek istediğinize emin misiniz?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@dp.Id" />
+                                    <input type="hidden" name="donemId" value="@seciliDonemId" />
+                                    <input type="hidden" name="bolumId" value="@seciliBolumId" />
+                                    <button type="submit" class="btn-action" title="Sil">🗑️</button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                }
+            }
+        }
+    </div>
+
+    <!-- SAĞ: Ekleme Formu -->
+    <div class="glass-card sticky-top" style="top: 20px;">
+        <h5 class="fw-bold text-dark mb-3">➕ Programa Ders Ekle</h5>
+        <form asp-action="DersProgramiEkle" asp-controller="Admin" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="donemId" name="donemId" value="@seciliDonemId" />
+            <input type="hidden" name="bolumId" value="@seciliBolumId" />
+
+            <div class="mb-3">
+                <label class="form-label fw-bold small text-muted mb-1">Dersin Fakültesi <span class="text-danger">*</span></label>
+                <select id="formFakulteId" class="form-select" onchange="loadBolumler(this.value)">
+                    <option value="">-- Fakülte Seçiniz --</option>
+                    @foreach (var f in fakulteler)
+                    {
+                        if(f.Id == seciliFakulteId){
+                            <option value="@f.Id" selected>@f.Adi</option>
+                        }else{
+                            <option value="@f.Id">@f.Adi</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold small text-muted mb-1">Dersin Bölümü <span class="text-danger">*</span></label>
+                <select id="formBolumId" class="form-select" onchange="loadDersler(this.value)" required>
+                    <option value="">-- Bölüm Seçiniz --</option>
+                    @foreach (var b in bolumler)
+                    {
+                        if(b.Id == seciliBolumId){
+                            <option value="@b.Id" selected>@b.Adi</option>
+                        }else{
+                            <option value="@b.Id">@b.Adi</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold small text-muted mb-1">Açılan Ders <span class="text-danger">*</span></label>
+                <select id="formAcilanDersId" name="acilanDersId" class="form-select" required>
+                    <option value="">-- Ders Seçiniz --</option>
+                    @foreach (var ad in acilanDersler)
+                    {
+                        <option value="@ad.Id">@ad.Ders.DersKodu (Şb: @ad.SubeNo) - @ad.OgretimUyesi.Kullanici.Ad @ad.OgretimUyesi.Kullanici.Soyad</option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold small text-muted mb-1">Sınıf / Derslik <span class="text-danger">*</span></label>
+                <select name="salonId" class="form-select" required>
+                    <option value="">-- Sınıf Seçiniz --</option>
+                    @foreach (var s in salonlar)
+                    {
+                        <option value="@s.Id">@s.Bina!.SalonAdi - @s.SalonAdi (@s.Kapasite Kişi)</option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold small text-muted mb-1">Gün <span class="text-danger">*</span></label>
+                <select name="gun" class="form-select" required>
+                    @foreach(var g in gunler)
+                    {
+                        <option value="@g.Key">@g.Value</option>
+                    }
+                </select>
+            </div>
+
+            <div class="row">
+                <div class="col-6 mb-3">
+                    <label class="form-label fw-bold small text-muted mb-1">Başlangıç <span class="text-danger">*</span></label>
+                    <input type="time" name="baslangicSaati" class="form-control" required value="09:00" />
+                </div>
+                <div class="col-6 mb-4">
+                    <label class="form-label fw-bold small text-muted mb-1">Bitiş <span class="text-danger">*</span></label>
+                    <input type="time" name="bitisSaati" class="form-control" required value="11:45" />
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 fw-bold py-2 rounded-3">
+                Programı Kaydet
+            </button>
+        </form>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        async function loadBolumler(fakulteId) {
+            const bolumSelect = document.getElementById("formBolumId");
+            const dersSelect = document.getElementById("formAcilanDersId");
+            
+            bolumSelect.innerHTML = '<option value="">-- Bölüm Seçiniz --</option>';
+            dersSelect.innerHTML = '<option value="">-- Önce Bölüm Seçiniz --</option>';
+            
+            if (!fakulteId) return;
+
+            const response = await fetch(`/Admin/GetBolumlerByFakulte?fakulteId=${fakulteId}`);
+            const data = await response.json();
+            
+            data.forEach(b => {
+                bolumSelect.innerHTML += `<option value="${b.id}">${b.ad}</option>`;
+            });
+        }
+
+        async function loadDersler(bolumId) {
+            const dersSelect = document.getElementById("formAcilanDersId");
+            const donemId = document.getElementById("donemId").value;
+            
+            dersSelect.innerHTML = '<option value="">-- Ders Seçiniz --</option>';
+            
+            if (!bolumId) return;
+
+            const response = await fetch(`/Admin/GetAcilanDerslerByBolum?bolumId=${bolumId}&donemId=${donemId}`);
+            const data = await response.json();
+            
+            data.forEach(d => {
+                dersSelect.innerHTML += `<option value="${d.id}">${d.text}</option>`;
+            });
+        }
+    </script>
+}
