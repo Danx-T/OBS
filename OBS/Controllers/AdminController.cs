@@ -1939,6 +1939,7 @@ public class AdminController : Controller
 
         var acilanDers = await _context.AcilanDers
             .Include(ad => ad.Ders)
+                .ThenInclude(d => d.Organizasyon)
             .Include(ad => ad.OgretimUyesi)
                 .ThenInclude(ou => ou.Kullanici)
             .FirstOrDefaultAsync(ad => ad.Id == acilanDersId);
