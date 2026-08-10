@@ -2111,6 +2111,7 @@ public class AdminController : Controller
                 .ThenInclude(d => d.Organizasyon)
             .Include(ad => ad.OgretimUyesi)
                 .ThenInclude(ou => ou.Kullanici)
+            .Include(ad => ad.Donem)
             .FirstOrDefaultAsync(ad => ad.Id == acilanDersId);
 
         if (acilanDers == null) return NotFound();
@@ -2131,11 +2132,15 @@ public class AdminController : Controller
             return RedirectToAction(nameof(SinavProgramiYonetimi), new { donemId, fakulteId = acilanDers.Ders.Organizasyon.UstOrganizasyonId, bolumId });
         }
 
-        // 2. Salon Çakışma Kontrolü
+        // 2. Salon Çakışma Kontrolü (Dönem bazlı)
         var salonCakismasi = await _context.SinavProgramis
             .Include(sp => sp.AcilanDers)
                 .ThenInclude(ad => ad.Ders)
-            .FirstOrDefaultAsync(sp => sp.SalonId == salonId &&
+            .Include(sp => sp.AcilanDers)
+                .ThenInclude(ad => ad.Donem)
+            .FirstOrDefaultAsync(sp => sp.AcilanDers.Donem.BaslangicTarihi <= acilanDers.Donem.BitisTarihi &&
+                                       sp.AcilanDers.Donem.BitisTarihi >= acilanDers.Donem.BaslangicTarihi &&
+                                       sp.SalonId == salonId &&
                                        baslangic < sp.Bitis && bitis > sp.Baslangic);
 
         if (salonCakismasi != null)
