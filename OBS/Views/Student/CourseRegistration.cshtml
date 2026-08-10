@@ -1,0 +1,221 @@
+@model OBS.ViewModels.Student.CourseRegistrationViewModel
+@{
+    ViewData["Title"] = "Ders Kayıt İşlemleri";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Ders Kayıt Ekranı</h2>
+            <p class="text-muted mb-0">Lütfen almak istediğiniz dersleri seçip <strong>Kesinleştir</strong> butonuna tıklayınız.</p>
+        </div>
+        @if (Model.AktifDonem != null)
+        {
+            <div class="bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-pill fw-medium">
+                @Model.AktifDonem.AkademikYil - @Model.AktifDonem.Donem1
+            </div>
+        }
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.HataMesaji))
+    {
+        <div class="alert alert-danger shadow-sm rounded-3 border-0 d-flex align-items-center mb-4" role="alert">
+            <span class="fs-4 me-3">⚠️</span>
+            <div>@Model.HataMesaji</div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.BasariMesaji))
+    {
+        <div class="alert alert-success shadow-sm rounded-3 border-0 d-flex align-items-center mb-4" role="alert">
+            <span class="fs-4 me-3">✅</span>
+            <div>@Model.BasariMesaji</div>
+        </div>
+    }
+
+    <div class="row g-4">
+        <!-- Sol Taraf: Açılan Dersler -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 pb-3 px-4">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <span class="fs-4 me-2">📖</span>Açılan Dersler
+                    </h5>
+                </div>
+                <div class="card-body p-4 pt-0">
+                    @if (Model.AcilanDersler.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="border-0 rounded-start">Ders</th>
+                                        <th class="border-0">Kredi / AKTS</th>
+                                        <th class="border-0">Kontenjan</th>
+                                        <th class="border-0 text-center rounded-end">İşlem</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ad in Model.AcilanDersler)
+                                    {
+                                        bool isSelected = Model.SecilenDersler.Any(s => s.Id == ad.Id);
+                                        bool isRegistered = Model.MevcutKayitlar.Any(k => k.AcilanDersId == ad.Id);
+
+                                        <tr>
+                                            <td>
+                                                <div class="fw-bold text-dark">@ad.Ders.DersKodu</div>
+                                                <div class="small text-muted">@ad.Ders.DersAdi</div>
+                                                @if (ad.DersProgramis.Any())
+                                                {
+                                                    <div class="small mt-1 text-primary">
+                                                        @foreach(var prog in ad.DersProgramis)
+                                                        {
+                                                            <span class="badge bg-light text-dark border me-1">@prog.Gun @prog.BaslangicSaati.ToString("HH:mm")</span>
+                                                        }
+                                                    </div>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">@ad.Ders.Kredi Kredi</span>
+                                                <span class="badge bg-info text-dark">@ad.Ders.Akts AKTS</span>
+                                            </td>
+                                            <td>
+                                                <span class="fw-medium">@ad.Kontenjan</span>
+                                            </td>
+                                            <td class="text-center">
+                                                @if (isRegistered)
+                                                {
+                                                    var kayit = Model.MevcutKayitlar.First(k => k.AcilanDersId == ad.Id);
+                                                    if (kayit.KayitDurumu == "Onay Bekliyor")
+                                                    {
+                                                        <div class="d-flex align-items-center justify-content-center gap-2">
+                                                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning p-2">@kayit.KayitDurumu</span>
+                                                            <form asp-action="WithdrawCourse" method="post" class="m-0">
+                                                                @Html.AntiForgeryToken()
+                                                                <input type="hidden" name="dersKaydiId" value="@kayit.Id" />
+                                                                <button type="submit" class="btn btn-sm btn-outline-danger px-2 rounded-pill" title="Geri Çek">Geri Çek</button>
+                                                            </form>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-success bg-opacity-10 text-success border border-success p-2">@kayit.KayitDurumu</span>
+                                                    }
+                                                }
+                                                else if (isSelected)
+                                                {
+                                                    <form asp-action="RemoveCourseFromCache" method="post" class="d-inline">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="acilanDersId" value="@ad.Id" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger px-3 rounded-pill fw-medium">Kaldır</button>
+                                                    </form>
+                                                }
+                                                else
+                                                {
+                                                    <form asp-action="AddCourseToCache" method="post" class="d-inline">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="acilanDersId" value="@ad.Id" />
+                                                        <button type="submit" class="btn btn-sm btn-primary px-3 rounded-pill fw-medium">Seç</button>
+                                                    </form>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">Bu dönem için açılmış ders bulunmuyor.</div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Sağ Taraf: Seçilen Dersler (Cache) -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 h-100" style="background: linear-gradient(to bottom, #f8fafc, #ffffff);">
+                <div class="card-header bg-transparent border-0 pt-4 pb-3 px-4">
+                    <h5 class="fw-bold mb-0 text-primary">
+                        <span class="fs-4 me-2">📋</span>Seçimlerin (Taslak)
+                    </h5>
+                </div>
+                <div class="card-body p-4 pt-0">
+                    @if (Model.SecilenDersler.Any())
+                    {
+                        <div class="list-group list-group-flush mb-4 bg-transparent">
+                            @foreach (var ad in Model.SecilenDersler)
+                            {
+                                <div class="list-group-item bg-transparent border-bottom px-0 py-3">
+                                    <div class="d-flex w-100 justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1 fw-bold text-dark">@ad.Ders.DersKodu - @ad.Ders.DersAdi</h6>
+                                            <small class="text-muted">@ad.Ders.Kredi Kredi | @ad.Ders.Akts AKTS</small>
+                                        </div>
+                                        <form asp-action="RemoveCourseFromCache" method="post" class="m-0">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="acilanDersId" value="@ad.Id" />
+                                            <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Kaldır">
+                                                ❌
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="bg-primary bg-opacity-10 rounded-3 p-3 mb-4">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="fw-medium text-dark">Toplam Kredi:</span>
+                                <span class="fw-bold text-primary">@Model.SecilenDersler.Sum(d => d.Ders.Kredi)</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-medium text-dark">Toplam AKTS:</span>
+                                <span class="fw-bold text-primary">@Model.SecilenDersler.Sum(d => d.Ders.Akts)</span>
+                            </div>
+                        </div>
+
+                        @if (Model.IsChecked)
+                        {
+                            <form asp-action="FinalizeRegistration" method="post">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-success w-100 py-3 rounded-pill fw-bold fs-6 shadow-sm">
+                                    ✅ Kesinleştir
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <form asp-action="CheckCourses" method="post">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-primary w-100 py-3 rounded-pill fw-bold fs-6 shadow-sm">
+                                    🔍 Dersleri Kontrol Et
+                                </button>
+                            </form>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 70px; height: 70px;">
+                                <span class="fs-2 text-muted">📥</span>
+                            </div>
+                            <h6 class="fw-bold text-dark">Henüz ders seçmedin</h6>
+                            <p class="text-muted small mb-0">Sol taraftaki listeden dersleri seçerek buraya ekleyebilirsin.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    .card:hover {
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.1)!important;
+    }
+</style>
