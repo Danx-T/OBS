@@ -71,7 +71,7 @@ namespace OBS.Controllers
                         .ThenInclude(ad => ad.Ders)
                     .Include(dp => dp.Salon)
                     .Where(dp => dp.Gun == todayStr && dp.AcilanDers.DonemId == activeSemester.Id)
-                    .Where(dp => dp.AcilanDers.DersKaydis.Any(dk => dk.OgrenciId == student.Id && dk.KayitDurumu == "Onaylandı"))
+                    .Where(dp => dp.AcilanDers.DersKaydis.Any(dk => dk.OgrenciId == student.Id && dk.KayitDurumu == "Onaylandi"))
                     .OrderBy(dp => dp.BaslangicSaati)
                     .ToListAsync();
             }
@@ -353,6 +353,41 @@ namespace OBS.Controllers
             }
 
             return RedirectToAction(nameof(CourseRegistration));
+        }
+
+        // --- SCHEDULE ---
+        public async Task<IActionResult> Schedule()
+        {
+            var student = await GetCurrentStudentAsync();
+            if (student == null)
+                return RedirectToAction("Login", "Auth");
+
+            var activeSemester = await GetActiveSemesterAsync();
+            
+            var schedule = new List<DersProgrami>();
+            if (activeSemester != null)
+            {
+                schedule = await _context.DersProgramis
+                    .Include(dp => dp.AcilanDers)
+                        .ThenInclude(ad => ad.Ders)
+                    .Include(dp => dp.Salon)
+                    .Include(dp => dp.AcilanDers)
+                        .ThenInclude(ad => ad.OgretimUyesi)
+                            .ThenInclude(ou => ou.Kullanici)
+                    .Where(dp => dp.AcilanDers.DonemId == activeSemester.Id)
+                    .Where(dp => dp.AcilanDers.DersKaydis.Any(dk => dk.OgrenciId == student.Id && dk.KayitDurumu == "Onaylandi"))
+                    .OrderBy(dp => dp.BaslangicSaati)
+                    .ToListAsync();
+            }
+
+            var vm = new StudentScheduleViewModel
+            {
+                Ogrenci = student,
+                AktifDonem = activeSemester,
+                HaftalikDersProgrami = schedule
+            };
+
+            return View(vm);
         }
     }
 }
