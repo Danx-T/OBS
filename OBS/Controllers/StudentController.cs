@@ -425,5 +425,41 @@ namespace OBS.Controllers
 
             return View(vm);
         }
+
+        // --- GRADES ---
+        public async Task<IActionResult> Grades()
+        {
+            var student = await GetCurrentStudentAsync();
+            if (student == null)
+                return RedirectToAction("Login", "Auth");
+
+            var activeSemester = await GetActiveSemesterAsync();
+            
+            var dersKayitlari = new List<DersKaydi>();
+            if (activeSemester != null)
+            {
+                dersKayitlari = await _context.DersKaydis
+                    .Include(dk => dk.AcilanDers)
+                        .ThenInclude(ad => ad.Ders)
+                    .Include(dk => dk.Notlars)
+                    .Include(dk => dk.AcilanDers)
+                        .ThenInclude(ad => ad.OgretimUyesi)
+                            .ThenInclude(ou => ou.Kullanici)
+                    .Where(dk => dk.OgrenciId == student.Id && 
+                                 dk.AcilanDers.DonemId == activeSemester.Id && 
+                                 dk.KayitDurumu == "Onaylandi") // Grades should only show for finalized courses
+                    .OrderBy(dk => dk.AcilanDers.Ders.DersKodu)
+                    .ToListAsync();
+            }
+
+            var vm = new StudentGradesViewModel
+            {
+                Ogrenci = student,
+                AktifDonem = activeSemester,
+                DersKayitlari = dersKayitlari
+            };
+
+            return View(vm);
+        }
     }
 }
