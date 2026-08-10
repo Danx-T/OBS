@@ -1942,14 +1942,16 @@ public class AdminController : Controller
                 .ThenInclude(d => d.Organizasyon)
             .Include(ad => ad.OgretimUyesi)
                 .ThenInclude(ou => ou.Kullanici)
+            .Include(ad => ad.Donem)
             .FirstOrDefaultAsync(ad => ad.Id == acilanDersId);
 
         if (acilanDers == null) return NotFound();
 
-        // 1. Öğretim Üyesi Çakışma Kontrolü
+        // 1. Öğretim Üyesi Çakışma Kontrolü (Tarih bazlı)
         bool hocaCakismasi = await _context.DersProgramis
             .AnyAsync(dp => dp.AcilanDers.OgretimUyesiId == acilanDers.OgretimUyesiId &&
-                            dp.AcilanDers.DonemId == acilanDers.DonemId &&
+                            dp.AcilanDers.Donem.BaslangicTarihi <= acilanDers.Donem.BitisTarihi &&
+                            dp.AcilanDers.Donem.BitisTarihi >= acilanDers.Donem.BaslangicTarihi &&
                             dp.Gun == gun &&
                             baslangicSaati < dp.BitisSaati && bitisSaati > dp.BaslangicSaati);
 
@@ -1959,11 +1961,12 @@ public class AdminController : Controller
             return RedirectToAction(nameof(DersProgramiYonetimi), new { donemId, bolumId });
         }
 
-        // 2. Salon Çakışma Kontrolü
+        // 2. Salon Çakışma Kontrolü (Tarih bazlı)
         var salonCakismasi = await _context.DersProgramis
             .Include(dp => dp.AcilanDers)
                 .ThenInclude(ad => ad.Ders)
-            .FirstOrDefaultAsync(dp => dp.AcilanDers.DonemId == acilanDers.DonemId &&
+            .FirstOrDefaultAsync(dp => dp.AcilanDers.Donem.BaslangicTarihi <= acilanDers.Donem.BitisTarihi &&
+                                       dp.AcilanDers.Donem.BitisTarihi >= acilanDers.Donem.BaslangicTarihi &&
                                        dp.SalonId == salonId &&
                                        dp.Gun == gun &&
                                        baslangicSaati < dp.BitisSaati && bitisSaati > dp.BaslangicSaati);
