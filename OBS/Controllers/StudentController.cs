@@ -389,5 +389,41 @@ namespace OBS.Controllers
 
             return View(vm);
         }
+
+        // --- EXAMS ---
+        public async Task<IActionResult> Exams()
+        {
+            var student = await GetCurrentStudentAsync();
+            if (student == null)
+                return RedirectToAction("Login", "Auth");
+
+            var activeSemester = await GetActiveSemesterAsync();
+            
+            var sinavlar = new List<SinavProgrami>();
+            if (activeSemester != null)
+            {
+                sinavlar = await _context.SinavProgramis
+                    .Include(sp => sp.AcilanDers)
+                        .ThenInclude(ad => ad.Ders)
+                    .Include(sp => sp.AcilanDers)
+                        .ThenInclude(ad => ad.OgretimUyesi)
+                            .ThenInclude(ou => ou.Kullanici)
+                    .Include(sp => sp.Salon)
+                    .Where(sp => sp.AcilanDers.DonemId == activeSemester.Id)
+                    .Where(sp => sp.AcilanDers.DersKaydis.Any(dk => dk.OgrenciId == student.Id && dk.KayitDurumu == "Onaylandi"))
+                    .OrderBy(sp => sp.AcilanDers.Ders.DersKodu)
+                    .ThenBy(sp => sp.Baslangic)
+                    .ToListAsync();
+            }
+
+            var vm = new StudentExamsViewModel
+            {
+                Ogrenci = student,
+                AktifDonem = activeSemester,
+                Sinavlar = sinavlar
+            };
+
+            return View(vm);
+        }
     }
 }
