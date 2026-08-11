@@ -1,0 +1,177 @@
+@model OBS.ViewModels.Academician.AcademicianGradeEntryDetailViewModel
+@{
+    ViewData["Title"] = "Not Girişi Detayı";
+}
+
+<style>
+    :root {
+        --primary: #4338ca;
+        --secondary: #64748b;
+        --card-bg: rgba(255, 255, 255, 0.95);
+        --muted: #94a3b8;
+    }
+    
+    .glass-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255,255,255,0.4);
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+        padding: 24px;
+        margin-bottom: 20px;
+    }
+
+    .page-header-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        padding: 24px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+    
+    .page-header-card h1 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 5px 0;
+    }
+    
+    .page-header-card p {
+        margin: 0;
+        color: var(--secondary);
+        font-size: 0.95rem;
+    }
+
+    .table th {
+        background-color: #f8fafc;
+        color: #334155;
+        font-weight: 700;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    
+    .table td {
+        vertical-align: middle;
+    }
+
+    .grade-input {
+        width: 100px;
+        text-align: center;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-weight: 600;
+        transition: border-color 0.2s;
+    }
+    
+    .grade-input:focus {
+        border-color: var(--primary);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.1);
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="page-header-card">
+        <div>
+            @if (Model.Sinav != null)
+            {
+                <h1>📝 Not Girişi: @Model.Sinav.AcilanDers.Ders.DersKodu</h1>
+                <p>@Model.Sinav.AcilanDers.Ders.DersAdi - @Model.Sinav.SinavTipi Sınavı</p>
+            }
+            else if (Model.AcilanDers != null)
+            {
+                <h1>📝 Not Girişi: @Model.AcilanDers.Ders.DersKodu</h1>
+                <p>@Model.AcilanDers.Ders.DersAdi - @(Model.OlcmeTuru == "Odev" ? "Ödev" : Model.OlcmeTuru) Notu</p>
+            }
+        </div>
+        <div>
+            <a asp-action="GradeEntry" class="btn btn-outline-secondary rounded-pill fw-medium">
+                Geri Dön
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["Basari"] != null)
+    {
+        <div class="alert alert-success shadow-sm rounded-3 border-0 d-flex align-items-center mb-4" role="alert">
+            <span class="fs-4 me-3">✅</span>
+            <div>@TempData["Basari"]</div>
+        </div>
+    }
+
+    <div class="glass-card">
+        @if (!Model.OgrenciNotlari.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <div class="fs-1 mb-3">📭</div>
+                <h5>Öğrenci Bulunamadı</h5>
+                <p>Bu derse kayıtlı ve onaylanmış öğrenci bulunmamaktadır.</p>
+            </div>
+        }
+        else
+        {
+            <form asp-action="SaveGrades" method="post">
+                @Html.AntiForgeryToken()
+                @if (Model.Sinav != null)
+                {
+                    <input type="hidden" name="sinavId" value="@Model.Sinav.Id" />
+                }
+                else if (Model.AcilanDers != null)
+                {
+                    <input type="hidden" name="acilanDersId" value="@Model.AcilanDers.Id" />
+                    <input type="hidden" name="olcmeTuru" value="@Model.OlcmeTuru" />
+                }
+
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>Öğrenci No</th>
+                                <th>Adı Soyadı</th>
+                                <th>Durum</th>
+                                <th class="text-center">Not (0-100)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ int i = 1; }
+                            @foreach (var item in Model.OgrenciNotlari)
+                            {
+                                <tr>
+                                    <td class="fw-bold text-muted">@i</td>
+                                    <td>@item.DersKaydi.Ogrenci.OgrenciNo</td>
+                                    <td class="fw-medium">@item.DersKaydi.Ogrenci.Kullanici.Ad @item.DersKaydi.Ogrenci.Kullanici.Soyad</td>
+                                    <td>
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success">Kayıtlı</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <input type="hidden" name="dersKaydiIds" value="@item.DersKaydi.Id" />
+                                        <input type="number" 
+                                               name="grades" 
+                                               class="grade-input" 
+                                               min="0" 
+                                               max="100" 
+                                               step="0.1" 
+                                               value="@(item.MevcutNot?.Puan.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))" 
+                                               placeholder="Giriniz" />
+                                    </td>
+                                </tr>
+                                i++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4 pt-3 border-top">
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 py-2 fw-bold shadow-sm">
+                        💾 Notları Kaydet
+                    </button>
+                </div>
+            </form>
+        }
+    </div>
+</div>
+
