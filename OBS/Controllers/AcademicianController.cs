@@ -80,5 +80,69 @@ namespace OBS.Controllers
             return View(vm);
         }
 
+        // GET: /Academician/Courses (Derslerim)
+        public async Task<IActionResult> Courses()
+        {
+            var academician = await GetCurrentAcademicianAsync();
+            if (academician == null) return RedirectToAction("Login", "Auth");
+
+            var activeSemester = await GetActiveSemesterAsync();
+            
+            var courses = new List<AcilanDer>();
+            if (activeSemester != null)
+            {
+                courses = await _context.AcilanDers
+                    .Include(ad => ad.Ders)
+                    .Include(ad => ad.DersKaydis) // To get student count
+                    .Where(ad => ad.OgretimUyesiId == academician.Id && ad.DonemId == activeSemester.Id)
+                    .OrderBy(ad => ad.Ders.DersKodu)
+                    .ToListAsync();
+            }
+
+            var vm = new AcademicianCoursesViewModel
+            {
+                OgretimUyesi = academician,
+                AktifDonem = activeSemester,
+                VerilenDersler = courses
+            };
+
+            return View(vm);
+        }
+
+        // GET: /Academician/CourseStudents/{id} (Dersi Alan Öğrenciler)
+        public async Task<IActionResult> CourseStudents(int id)
+        {
+            var academician = await GetCurrentAcademicianAsync();
+            if (academician == null) return RedirectToAction("Login", "Auth");
+
+            var acilanDers = await _context.AcilanDers
+                .Include(ad => ad.Ders)
+                .Include(ad => ad.Donem)
+                .FirstOrDefaultAsync(ad => ad.Id == id && ad.OgretimUyesiId == academician.Id);
+
+            if (acilanDers == null)
+            {
+                return NotFound();
+            }
+
+            // Get students who have "Onaylandi" or any valid status for this course
+            var dersKayitlari = await _context.DersKaydis
+                .Include(dk => dk.Ogrenci)
+                    .ThenInclude(o => o.Kullanici)
+                .Include(dk => dk.Ogrenci)
+                    .ThenInclude(o => o.Organizasyon)
+                .Where(dk => dk.AcilanDersId == id && dk.KayitDurumu == "Onaylandi")
+                .OrderBy(dk => dk.Ogrenci.OgrenciNo)
+                .ToListAsync();
+
+            var vm = new AcademicianCourseStudentsViewModel
+            {
+                OgretimUyesi = academician,
+                AcilanDers = acilanDers,
+                DersKayitlari = dersKayitlari
+            };
+
+            return View(vm);
+        }
     }
 }

@@ -14,8 +14,8 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="#" class="nav-link text-white">
-                📄 Ekran 1
+            <a asp-controller="Academician" asp-action="Courses" class="nav-link text-white @(action == "Courses" || action == "CourseStudents" ? "active bg-primary" : "")">
+                📚 Derslerim
             </a>
         </li>
         <li class="nav-item">
