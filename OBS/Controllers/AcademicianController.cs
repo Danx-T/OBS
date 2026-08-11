@@ -301,5 +301,36 @@ namespace OBS.Controllers
 
             return View(vm);
         }
+        // --- EXAMS ---
+        
+        // GET: /Academician/Exams
+        public async Task<IActionResult> Exams()
+        {
+            var academician = await GetCurrentAcademicianAsync();
+            if (academician == null) return RedirectToAction("Login", "Auth");
+
+            var activeSemester = await GetActiveSemesterAsync();
+            
+            var exams = new List<SinavProgrami>();
+            if (activeSemester != null)
+            {
+                exams = await _context.SinavProgramis
+                    .Include(sp => sp.AcilanDers)
+                        .ThenInclude(ad => ad.Ders)
+                    .Include(sp => sp.Salon)
+                    .Where(sp => sp.AcilanDers.DonemId == activeSemester.Id && sp.AcilanDers.OgretimUyesiId == academician.Id)
+                    .OrderBy(sp => sp.Baslangic)
+                    .ToListAsync();
+            }
+
+            var vm = new AcademicianExamsViewModel
+            {
+                OgretimUyesi = academician,
+                AktifDonem = activeSemester,
+                Sinavlar = exams
+            };
+
+            return View(vm);
+        }
     }
 }
