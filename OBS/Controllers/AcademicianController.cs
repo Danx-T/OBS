@@ -332,5 +332,203 @@ namespace OBS.Controllers
 
             return View(vm);
         }
+        // --- GRADE ENTRY ---
+        
+        // GET: /Academician/GradeEntry
+        public async Task<IActionResult> GradeEntry()
+        {
+            var academician = await GetCurrentAcademicianAsync();
+            if (academician == null) return RedirectToAction("Login", "Auth");
+
+            var activeSemester = await GetActiveSemesterAsync();
+            
+            var exams = new List<SinavProgrami>();
+            var verilenDersler = new List<AcilanDer>();
+            if (activeSemester != null)
+            {
+                // Sadece geçmiş veya şu an yapılan sınavların notu girilebilir
+                exams = await _context.SinavProgramis
+                    .Include(sp => sp.AcilanDers)
+                        .ThenInclude(ad => ad.Ders)
+                    .Include(sp => sp.Salon)
+                    .Where(sp => sp.AcilanDers.DonemId == activeSemester.Id && 
+                                 sp.AcilanDers.OgretimUyesiId == academician.Id &&
+                                 sp.Baslangic <= DateTime.Now)
+                    .OrderByDescending(sp => sp.Baslangic)
+                    .ToListAsync();
+                    
+                // Akademisyenin bu dönem verdiği dersleri getir (Quiz, Ödev, Proje notu için)
+                verilenDersler = await _context.AcilanDers
+                    .Include(ad => ad.Ders)
+                    .Where(ad => ad.DonemId == activeSemester.Id && ad.OgretimUyesiId == academician.Id)
+                    .ToListAsync();
+            }
+
+            var vm = new AcademicianGradeEntryViewModel
+            {
+                OgretimUyesi = academician,
+                AktifDonem = activeSemester,
+                GirisYapilabilirSinavlar = exams,
+                VerilenDersler = verilenDersler
+            };
+
+            return View(vm);
+        }
+
+        // GET: /Academician/GradeEntryDetail
+        public async Task<IActionResult> GradeEntryDetail(int? id, int? acilanDersId, string? olcmeTuru)
+        {
+            var academician = await GetCurrentAcademicianAsync();
+            if (academician == null) return RedirectToAction("Login", "Auth");
+
+            SinavProgrami? sinav = null;
+            AcilanDer? ders = null;
+            string tur = olcmeTuru ?? "";
+            int dersId = 0;
+
+            if (id.HasValue)
+            {
+                sinav = await _context.SinavProgramis
+                    .Include(sp => sp.AcilanDers)
+                        .ThenInclude(ad => ad.Ders)
+                    .Include(sp => sp.Salon)
+                    .FirstOrDefaultAsync(sp => sp.Id == id.Value && sp.AcilanDers.OgretimUyesiId == academician.Id);
+
+                if (sinav == null || sinav.Baslangic > DateTime.Now)
+                {
+                    TempData["Hata"] = "Sınav bulunamadı veya henüz başlamadığı için not girilemez.";
+                    return RedirectToAction(nameof(GradeEntry));
+                }
+                dersId = sinav.AcilanDersId;
+                tur = sinav.SinavTipi;
+            }
+            else if (acilanDersId.HasValue && !string.IsNullOrEmpty(olcmeTuru))
+            {
+                ders = await _context.AcilanDers
+                    .Include(ad => ad.Ders)
+                    .FirstOrDefaultAsync(ad => ad.Id == acilanDersId.Value && ad.OgretimUyesiId == academician.Id);
+                
+                if (ders == null)
+                {
+                    TempData["Hata"] = "Ders bulunamadı.";
+                    return RedirectToAction(nameof(GradeEntry));
+                }
+                dersId = ders.Id;
+            }
+            else
+            {
+                return RedirectToAction(nameof(GradeEntry));
+            }
+
+            // Dersi alan (Onaylanmış) öğrencileri getir
+            var dersKayitlari = await _context.DersKaydis
+                .Include(dk => dk.Ogrenci)
+                    .ThenInclude(o => o.Kullanici)
+                .Include(dk => dk.Notlars)
+                .Where(dk => dk.AcilanDersId == dersId && dk.KayitDurumu == "Onaylandi")
+                .OrderBy(dk => dk.Ogrenci.Kullanici.Ad)
+                .ToListAsync();
+
+            var ogrenciNotlari = new List<OgrenciNotDTO>();
+            foreach (var dk in dersKayitlari)
+            {
+                var not = dk.Notlars.FirstOrDefault(n => n.OlcmeTuru == tur);
+                ogrenciNotlari.Add(new OgrenciNotDTO
+                {
+                    DersKaydi = dk,
+                    MevcutNot = not
+                });
+            }
+
+            var vm = new AcademicianGradeEntryDetailViewModel
+            {
+                OgretimUyesi = academician,
+                Sinav = sinav,
+                AcilanDers = ders,
+                OlcmeTuru = tur,
+                OgrenciNotlari = ogrenciNotlari
+            };
+
+            return View(vm);
+        }
+
+        // POST: /Academician/SaveGrades
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveGrades(int? sinavId, int? acilanDersId, string? olcmeTuru, List<int> dersKaydiIds, List<string> grades)
+        {
+            var academician = await GetCurrentAcademicianAsync();
+            if (academician == null) return RedirectToAction("Login", "Auth");
+
+            string tur = olcmeTuru ?? "";
+
+            if (sinavId.HasValue)
+            {
+                var sinav = await _context.SinavProgramis
+                    .Include(sp => sp.AcilanDers)
+                    .FirstOrDefaultAsync(sp => sp.Id == sinavId.Value && sp.AcilanDers.OgretimUyesiId == academician.Id);
+
+                if (sinav == null || sinav.Baslangic > DateTime.Now)
+                {
+                    TempData["Hata"] = "Geçersiz işlem.";
+                    return RedirectToAction(nameof(GradeEntry));
+                }
+                tur = sinav.SinavTipi;
+            }
+            else if (acilanDersId.HasValue && !string.IsNullOrEmpty(tur))
+            {
+                var ders = await _context.AcilanDers
+                    .FirstOrDefaultAsync(ad => ad.Id == acilanDersId.Value && ad.OgretimUyesiId == academician.Id);
+                
+                if (ders == null)
+                {
+                    TempData["Hata"] = "Geçersiz işlem.";
+                    return RedirectToAction(nameof(GradeEntry));
+                }
+            }
+            else
+            {
+                return RedirectToAction(nameof(GradeEntry));
+            }
+
+            for (int i = 0; i < dersKaydiIds.Count; i++)
+            {
+                int dkId = dersKaydiIds[i];
+                string gradeStr = grades != null && grades.Count > i ? grades[i] : "";
+
+                if (string.IsNullOrWhiteSpace(gradeStr))
+                    continue;
+
+                if (decimal.TryParse(gradeStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal puan))
+                {
+                    if (puan < 0) puan = 0;
+                    if (puan > 100) puan = 100;
+
+                    var existingNot = await _context.Notlars.FirstOrDefaultAsync(n => n.DersKaydiId == dkId && n.OlcmeTuru == tur);
+                    
+                    if (existingNot != null)
+                    {
+                        existingNot.Puan = puan;
+                    }
+                    else
+                    {
+                        _context.Notlars.Add(new Notlar
+                        {
+                            DersKaydiId = dkId,
+                            OlcmeTuru = tur,
+                            Puan = puan
+                        });
+                    }
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            TempData["Basari"] = "Notlar başarıyla kaydedildi.";
+            
+            if (sinavId.HasValue)
+                return RedirectToAction(nameof(GradeEntryDetail), new { id = sinavId.Value });
+            else
+                return RedirectToAction(nameof(GradeEntryDetail), new { acilanDersId = acilanDersId.Value, olcmeTuru = tur });
+        }
     }
 }
