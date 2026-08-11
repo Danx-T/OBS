@@ -114,6 +114,12 @@ public class AuthController : Controller
         if (isAdmin)
             return RedirectToAction("KullaniciOlustur", "Admin");
 
+        var isOgretimUyesi = await _context.OgretimUyesis
+            .AnyAsync(ou => ou.KullaniciId == kullanici.Id);
+
+        if (isOgretimUyesi)
+            return RedirectToAction("Index", "Academician");
+
         return RedirectToAction("Index", "Student");
     }
 
@@ -309,6 +315,12 @@ public class AuthController : Controller
         if (isOgrenci)
         {
             claims.Add(new Claim("UserType", "Ogrenci"));
+        }
+
+        bool isOgretimUyesi = await _context.OgretimUyesis.AnyAsync(ou => ou.KullaniciId == kullanici.Id);
+        if (isOgretimUyesi)
+        {
+            claims.Add(new Claim("UserType", "OgretimUyesi"));
         }
 
         var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

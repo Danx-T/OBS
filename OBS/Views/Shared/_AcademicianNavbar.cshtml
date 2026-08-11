@@ -1,0 +1,55 @@
+@{
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+}
+
+<aside class="bg-dark text-white p-3 position-fixed top-0 start-0 bottom-0 d-flex flex-column" style="width: 240px; z-index: 1050;">
+    <div class="mb-4 px-2">
+        <span class="fs-5 fw-bold text-white">Akademisyen Paneli</span>
+    </div>
+
+    <ul class="nav nav-pills flex-column mb-auto gap-1">
+        <li class="nav-item">
+            <a asp-controller="Academician" asp-action="Index" class="nav-link text-white @(action == "Index" ? "active bg-primary" : "")">
+                🏠 Ana Sayfa
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link text-white">
+                📄 Ekran 1
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link text-white">
+                📄 Ekran 2
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link text-white">
+                📄 Ekran 3
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link text-white">
+                📄 Ekran 4
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link text-white">
+                📄 Ekran 5
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link text-white">
+                📄 Ekran 6
+            </a>
+        </li>
+    </ul>
+
+    <div class="border-top border-secondary pt-3 px-2 d-flex align-items-center justify-content-between">
+        <span class="small text-light text-truncate" style="max-width: 140px;">@User.Identity!.Name</span>
+        <form asp-action="Logout" asp-controller="Auth" method="post" class="m-0">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-sm btn-outline-danger">Çıkış</button>
+        </form>
+    </div>
+</aside>
