@@ -1,0 +1,189 @@
+﻿@model OBS.ViewModels.Academician.AcademicianScheduleViewModel
+@{
+    ViewData["Title"] = "Ders Programı";
+    
+    var gunler = new Dictionary<string, string> {
+        { "Pazartesi", "Pazartesi" },
+        { "Sali", "Salı" },
+        { "Carsamba", "Çarşamba" },
+        { "Persembe", "Perşembe" },
+        { "Cuma", "Cuma" },
+        { "Cumartesi", "Cumartesi" },
+        { "Pazar", "Pazar" }
+    };
+}
+
+<style>
+    :root {
+        --primary: #4338ca;
+        --primary-light: #e0e7ff;
+        --secondary: #64748b;
+        --bg: #f8fafc;
+        --card-bg: rgba(255, 255, 255, 0.95);
+        --muted: #94a3b8;
+    }
+    
+    .schedule-wrap {
+        display: flex;
+        flex-direction: column;
+        margin-top: 15px;
+    }
+
+    .glass-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255,255,255,0.4);
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+        padding: 24px;
+    }
+
+    .page-header-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        padding: 24px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+    
+    .page-header-card h1 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 5px 0;
+    }
+    
+    .page-header-card p {
+        margin: 0;
+        color: var(--secondary);
+        font-size: 0.95rem;
+    }
+
+    .day-header {
+        background: #f1f5f9;
+        font-weight: 700;
+        color: #334155;
+        padding: 10px 15px;
+        border-radius: 8px;
+        margin-top: 15px;
+        margin-bottom: 10px;
+        font-size: 1.1rem;
+    }
+
+    .schedule-card {
+        background: white;
+        border-radius: 10px;
+        padding: 16px 20px;
+        border-left: 4px solid var(--primary);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: transform 0.2s;
+    }
+    .schedule-card:hover {
+        transform: translateX(4px);
+    }
+
+    .time-badge {
+        background: #e0e7ff;
+        color: #4338ca;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        margin-right: 20px;
+        display: inline-block;
+        min-width: 120px;
+        text-align: center;
+    }
+
+    .course-info {
+        flex-grow: 1;
+    }
+    .course-title {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 1.1rem;
+        margin-bottom: 4px;
+    }
+    .course-meta {
+        font-size: 0.9rem;
+        color: var(--secondary);
+    }
+    
+    .room-badge {
+        background: #fce7f3;
+        color: #be185d;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="page-header-card">
+        <div>
+            <h1>📅 Haftalık Ders Programı</h1>
+            <p>Bu dönem verdiğiniz derslerin haftalık programı aşağıdadır.</p>
+        </div>
+        @if (Model.AktifDonem != null)
+        {
+            <div class="bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-pill fw-medium">
+                @Model.AktifDonem.AkademikYil - @Model.AktifDonem.Donem1 Dönemi
+            </div>
+        }
+    </div>
+
+    <div class="schedule-wrap">
+        @if (!Model.HaftalikDersProgrami.Any())
+        {
+            <div class="text-center py-5 text-muted glass-card">
+                <div class="fs-1 mb-3">📭</div>
+                <h5>Program Bulunamadı</h5>
+                <p>Bu dönem için üzerinize atanmış herhangi bir ders programı bulunmamaktadır.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var gun in gunler)
+            {
+                var gununDersleri = Model.HaftalikDersProgrami.Where(m => m.Gun == gun.Key).ToList();
+                if (gununDersleri.Any())
+                {
+                    <div class="day-header">@gun.Value</div>
+                    @foreach (var dp in gununDersleri)
+                    {
+                        <div class="schedule-card">
+                            <div class="d-flex align-items-center">
+                                <div class="time-badge">
+                                    @dp.BaslangicSaati.ToString("HH:mm") - @dp.BitisSaati.ToString("HH:mm")
+                                </div>
+                                <div class="course-info">
+                                    <div class="course-title">@dp.AcilanDers.Ders.DersKodu - @dp.AcilanDers.Ders.DersAdi</div>
+                                    <div class="course-meta">
+                                        Şube: @dp.AcilanDers.SubeNo | Kontenjan: @dp.AcilanDers.Kontenjan
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="room-badge" title="@dp.Salon.SalonAdi">
+                                    🚪 @dp.Salon.SalonAdi
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            }
+        }
+    </div>
+</div>
+
