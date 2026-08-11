@@ -1,0 +1,192 @@
+﻿@model OBS.ViewModels.Academician.AcademicianExamsViewModel
+@{
+    ViewData["Title"] = "Sınav Programı";
+}
+
+<style>
+    :root {
+        --primary: #4338ca;
+        --secondary: #64748b;
+        --card-bg: rgba(255, 255, 255, 0.95);
+        --muted: #94a3b8;
+    }
+    
+    .exams-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        margin-top: 15px;
+    }
+
+    .glass-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255,255,255,0.4);
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+        padding: 24px;
+    }
+
+    .page-header-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        padding: 24px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+    
+    .page-header-card h1 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 5px 0;
+    }
+    
+    .page-header-card p {
+        margin: 0;
+        color: var(--secondary);
+        font-size: 0.95rem;
+    }
+
+    .course-header {
+        background: #f1f5f9;
+        font-weight: 700;
+        color: #334155;
+        padding: 12px 20px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        font-size: 1.15rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .exam-card {
+        background: white;
+        border-radius: 10px;
+        padding: 16px 20px;
+        border-left: 4px solid var(--primary);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: transform 0.2s;
+    }
+    
+    .exam-card:hover {
+        transform: translateX(4px);
+    }
+
+    .date-badge {
+        background: #e0e7ff;
+        color: #4338ca;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-weight: 800;
+        text-align: center;
+        min-width: 130px;
+    }
+    
+    .date-badge .day { font-size: 1.1rem; }
+    .date-badge .time { font-size: 0.85rem; font-weight: 600; opacity: 0.9; }
+
+    .exam-info {
+        flex-grow: 1;
+        margin-left: 20px;
+    }
+    
+    .exam-type {
+        font-weight: 800;
+        color: #1e293b;
+        font-size: 1.1rem;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .exam-meta {
+        font-size: 0.9rem;
+        color: var(--secondary);
+    }
+    
+    .room-badge {
+        background: #fce7f3;
+        color: #be185d;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="page-header-card">
+        <div>
+            <h1>📝 Sınav Programı</h1>
+            <p>Bu dönem verdiğiniz derslerin sınav takvimi aşağıdadır.</p>
+        </div>
+        @if (Model.AktifDonem != null)
+        {
+            <div class="bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-pill fw-medium">
+                @Model.AktifDonem.AkademikYil - @Model.AktifDonem.Donem1 Dönemi
+            </div>
+        }
+    </div>
+
+    <div class="exams-wrap">
+        @if (!Model.Sinavlar.Any())
+        {
+            <div class="text-center py-5 text-muted glass-card">
+                <div class="fs-1 mb-3">📭</div>
+                <h5>Sınav Programı Bulunamadı</h5>
+                <p>Bu dönem için üzerinize atanmış dersler için henüz bir sınav tarihi planlanmamış.</p>
+            </div>
+        }
+        else
+        {
+            var groupedExams = Model.Sinavlar.GroupBy(s => s.AcilanDers).ToList();
+
+            foreach (var courseGroup in groupedExams)
+            {
+                <div class="glass-card p-4">
+                    <div class="course-header">
+                        <span>📚</span> @courseGroup.Key.Ders.DersKodu - @courseGroup.Key.Ders.DersAdi
+                    </div>
+                    
+                    <div class="ps-3 border-start border-2 border-light ms-3">
+                        @foreach (var exam in courseGroup.OrderBy(e => e.Baslangic))
+                        {
+                            <div class="exam-card">
+                                <div class="d-flex align-items-center w-100">
+                                    <div class="date-badge">
+                                        <div class="day">@exam.Baslangic.ToString("dd MMM yyyy")</div>
+                                        <div class="time mt-1">@exam.Baslangic.ToString("HH:mm") - @exam.Bitis.ToString("HH:mm")</div>
+                                    </div>
+                                    
+                                    <div class="exam-info">
+                                        <div class="exam-type">@exam.SinavTipi Sınavı</div>
+                                        <div class="exam-meta">
+                                            Şube: @exam.AcilanDers.SubeNo | Kontenjan: @exam.AcilanDers.Kontenjan
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="room-badge" title="Sınav Salonu">
+                                        🚪 @exam.Salon.SalonAdi
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
