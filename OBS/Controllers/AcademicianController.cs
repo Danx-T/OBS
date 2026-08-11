@@ -270,5 +270,36 @@ namespace OBS.Controllers
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(AdvisorApprovals));
         }
+        // --- SCHEDULE ---
+        
+        // GET: /Academician/Schedule
+        public async Task<IActionResult> Schedule()
+        {
+            var academician = await GetCurrentAcademicianAsync();
+            if (academician == null) return RedirectToAction("Login", "Auth");
+
+            var activeSemester = await GetActiveSemesterAsync();
+            
+            var schedule = new List<DersProgrami>();
+            if (activeSemester != null)
+            {
+                schedule = await _context.DersProgramis
+                    .Include(dp => dp.AcilanDers)
+                        .ThenInclude(ad => ad.Ders)
+                    .Include(dp => dp.Salon)
+                    .Where(dp => dp.AcilanDers.DonemId == activeSemester.Id && dp.AcilanDers.OgretimUyesiId == academician.Id)
+                    .OrderBy(dp => dp.BaslangicSaati)
+                    .ToListAsync();
+            }
+
+            var vm = new AcademicianScheduleViewModel
+            {
+                OgretimUyesi = academician,
+                AktifDonem = activeSemester,
+                HaftalikDersProgrami = schedule
+            };
+
+            return View(vm);
+        }
     }
 }
