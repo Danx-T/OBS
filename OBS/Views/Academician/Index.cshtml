@@ -1,0 +1,153 @@
+@model OBS.ViewModels.Academician.AcademicianDashboardViewModel
+@{
+    ViewData["Title"] = "Ana Sayfa";
+}
+
+<style>
+    :root {
+        --primary: #4338ca;
+        --secondary: #64748b;
+        --card-bg: rgba(255, 255, 255, 0.95);
+    }
+    
+    .dashboard-header {
+        background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        padding: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+    
+    .dashboard-header h1 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 8px 0;
+    }
+
+    .welcome-text {
+        font-size: 1.1rem;
+        color: var(--secondary);
+        margin: 0;
+    }
+
+    .glass-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255,255,255,0.4);
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+        padding: 24px;
+        height: 100%;
+    }
+
+    .course-card {
+        background: white;
+        border-left: 4px solid var(--primary);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .course-time {
+        background: #e0e7ff;
+        color: #4338ca;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    .course-details {
+        flex-grow: 1;
+        margin-left: 15px;
+    }
+
+    .course-code {
+        font-weight: 800;
+        color: #1e293b;
+        font-size: 1.1rem;
+        margin-bottom: 2px;
+    }
+
+    .course-name {
+        color: var(--secondary);
+        font-size: 0.9rem;
+    }
+
+    .room-badge {
+        background: #f1f5f9;
+        color: #334155;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="dashboard-header">
+        <div>
+            <h1>Merhaba, @Model.OgretimUyesi.Unvan @Model.OgretimUyesi.Kullanici.Ad @Model.OgretimUyesi.Kullanici.Soyad</h1>
+            <p class="welcome-text">Akademisyen paneline hoş geldiniz. İyi çalışmalar dileriz.</p>
+        </div>
+        @if (Model.AktifDonem != null)
+        {
+            <div class="bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-pill fw-bold">
+                @Model.AktifDonem.AkademikYil - @Model.AktifDonem.Donem1 Dönemi
+            </div>
+        }
+        else
+        {
+            <div class="bg-danger bg-opacity-10 text-danger px-4 py-2 rounded-pill fw-bold">
+                Aktif Dönem Bulunamadı
+            </div>
+        }
+    </div>
+
+    <div class="row g-4">
+        <!-- Bugünkü Dersler -->
+        <div class="col-lg-12">
+            <div class="glass-card">
+                <h5 class="fw-bold mb-4 text-dark">
+                    <span class="fs-4 me-2">📅</span> Bugünün Ders Programı
+                </h5>
+                
+                @if (!Model.BugunkuDersler.Any())
+                {
+                    <div class="text-center py-4 text-muted">
+                        <div class="fs-2 mb-2">☕</div>
+                        <p class="mb-0">Bugün için planlanmış bir dersiniz bulunmuyor.</p>
+                    </div>
+                }
+                else
+                {
+                    foreach (var ders in Model.BugunkuDersler)
+                    {
+                        <div class="course-card">
+                            <div class="course-time">
+                                @ders.BaslangicSaati.ToString("HH:mm") - @ders.BitisSaati.ToString("HH:mm")
+                            </div>
+                            <div class="course-details">
+                                <div class="course-code">@ders.AcilanDers.Ders.DersKodu</div>
+                                <div class="course-name">@ders.AcilanDers.Ders.DersAdi</div>
+                            </div>
+                            <div class="room-badge">
+                                🚪 @ders.Salon.SalonAdi
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+

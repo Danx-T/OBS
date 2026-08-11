@@ -24,7 +24,8 @@
 @{
     var isAdmin = (await AuthorizationService.AuthorizeAsync(User, null, new Microsoft.AspNetCore.Authorization.Infrastructure.RolesAuthorizationRequirement(new[] { "Admin" }))).Succeeded;
     var isOgrenci = User.HasClaim("UserType", "Ogrenci");
-    var hasSidebar = isAdmin || isOgrenci;
+    var isOgretimUyesi = User.HasClaim("UserType", "OgretimUyesi");
+    var hasSidebar = isAdmin || isOgrenci || isOgretimUyesi;
 }
 <body>
     @if (isAdmin)
@@ -34,6 +35,10 @@
     else if (isOgrenci)
     {
         @await Html.PartialAsync("_StudentNavbar")
+    }
+    else if (isOgretimUyesi)
+    {
+        @await Html.PartialAsync("_AcademicianNavbar")
     }
 
     <div class="@(hasSidebar ? "ms-auto" : "container")" style="@(hasSidebar ? "margin-left: 250px !important; padding: 20px;" : "")">
