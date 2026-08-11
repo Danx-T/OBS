@@ -147,8 +147,8 @@ namespace OBS.Controllers
             var student = await GetCurrentStudentAsync();
             if (student == null) return RedirectToAction("Login", "Auth");
 
-            // Check if already in DB
-            bool existsInDb = await _context.DersKaydis.AnyAsync(dk => dk.OgrenciId == student.Id && dk.AcilanDersId == acilanDersId);
+            // Check if already in DB (ignore 'Reddedildi' so they can re-select)
+            bool existsInDb = await _context.DersKaydis.AnyAsync(dk => dk.OgrenciId == student.Id && dk.AcilanDersId == acilanDersId && dk.KayitDurumu != "Reddedildi");
             if (existsInDb)
             {
                 TempData["Hata"] = "Bu ders zaten kayıtlarınızda mevcut.";
@@ -213,7 +213,7 @@ namespace OBS.Controllers
 
             var existingPrograms = await _context.DersProgramis
                 .Where(dp => dp.AcilanDers.DonemId == activeSemester.Id && 
-                             dp.AcilanDers.DersKaydis.Any(dk => dk.OgrenciId == student.Id))
+                             dp.AcilanDers.DersKaydis.Any(dk => dk.OgrenciId == student.Id && dk.KayitDurumu != "Reddedildi"))
                 .ToListAsync();
 
             var allProgramsToCheck = selectedPrograms.Concat(existingPrograms).ToList();
@@ -279,7 +279,7 @@ namespace OBS.Controllers
 
             var existingPrograms = await _context.DersProgramis
                 .Where(dp => dp.AcilanDers.DonemId == activeSemester.Id && 
-                             dp.AcilanDers.DersKaydis.Any(dk => dk.OgrenciId == student.Id))
+                             dp.AcilanDers.DersKaydis.Any(dk => dk.OgrenciId == student.Id && dk.KayitDurumu != "Reddedildi"))
                 .ToListAsync();
 
             var allProgramsToCheck = selectedPrograms.Concat(existingPrograms).ToList();
@@ -311,15 +311,25 @@ namespace OBS.Controllers
                         return RedirectToAction(nameof(CourseRegistration));
                     }
 
-                    var kayit = new DersKaydi
+                    var existingKayit = await _context.DersKaydis.FirstOrDefaultAsync(dk => dk.OgrenciId == student.Id && dk.AcilanDersId == dersId);
+                    if (existingKayit != null)
                     {
-                        OgrenciId = student.Id,
-                        AcilanDersId = dersId,
-                        KayitDurumu = "Onay Bekliyor",
-                        KayitTarihi = DateTime.Now,
-                        OnayTarihi = null
-                    };
-                    _context.DersKaydis.Add(kayit);
+                        existingKayit.KayitDurumu = "Onay Bekliyor";
+                        existingKayit.KayitTarihi = DateTime.Now;
+                        existingKayit.OnayTarihi = null;
+                    }
+                    else
+                    {
+                        var kayit = new DersKaydi
+                        {
+                            OgrenciId = student.Id,
+                            AcilanDersId = dersId,
+                            KayitDurumu = "Onay Bekliyor",
+                            KayitTarihi = DateTime.Now,
+                            OnayTarihi = null
+                        };
+                        _context.DersKaydis.Add(kayit);
+                    }
                 }
             }
 

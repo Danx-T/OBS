@@ -1,0 +1,332 @@
+﻿@model OBS.ViewModels.Academician.AcademicianAdvisorViewModel
+@{
+    ViewData["Title"] = "Danışmanlık İşlemleri";
+}
+
+<style>
+    :root {
+        --primary: #4338ca;
+        --secondary: #64748b;
+        --card-bg: rgba(255, 255, 255, 0.95);
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        padding: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+
+    .nav-tabs .nav-link {
+        border-radius: 10px 10px 0 0;
+        color: var(--secondary);
+        font-weight: 600;
+        padding: 12px 24px;
+        border: none;
+        border-bottom: 3px solid transparent;
+    }
+    
+    .nav-tabs .nav-link.active {
+        color: var(--primary);
+        background: transparent;
+        border-bottom: 3px solid var(--primary);
+    }
+
+    .student-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        border: 1px solid rgba(0,0,0,0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .student-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .student-name {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #1e293b;
+    }
+
+    .student-no {
+        color: var(--secondary);
+        font-family: monospace;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .course-badge {
+        background: #f1f5f9;
+        color: #334155;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-right: 5px;
+        margin-top: 5px;
+        display: inline-block;
+    }
+
+    .action-buttons form {
+        display: inline;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="page-header">
+        <div>
+            <h1 class="fw-bold mb-1 text-dark">👨‍🎓 Danışmanlık İşlemleri</h1>
+            <p class="text-secondary m-0">Danışmanı olduğunuz öğrencilerin ders kayıt taleplerini buradan yönetebilirsiniz.</p>
+        </div>
+        @if (Model.AktifDonem != null)
+        {
+            <div class="bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-pill fw-bold">
+                @Model.AktifDonem.AkademikYil - @Model.AktifDonem.Donem1 Dönemi
+            </div>
+        }
+    </div>
+
+    <!-- TABS -->
+    <ul class="nav nav-tabs mb-4 border-bottom-0" id="advisorTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">
+                ⏳ Onay Bekleyenler 
+                <span class="badge bg-warning text-dark ms-2 rounded-pill">@Model.OnayBekleyenler.Count</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved" type="button" role="tab">
+                ✅ Onaylananlar
+                <span class="badge bg-success ms-2 rounded-pill">@Model.Onaylananlar.Count</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected" type="button" role="tab">
+                ❌ Reddedilenler
+                <span class="badge bg-danger ms-2 rounded-pill">@Model.Reddedilenler.Count</span>
+            </button>
+        </li>
+    </ul>
+
+    <!-- TAB CONTENTS -->
+    <div class="tab-content" id="advisorTabsContent">
+        
+        <!-- PENDING TAB -->
+        <div class="tab-pane fade show active" id="pending" role="tabpanel">
+            @if (!Model.OnayBekleyenler.Any())
+            {
+                <div class="text-center py-5 text-muted bg-white rounded-4 shadow-sm border">
+                    <div class="fs-1 mb-3">🎉</div>
+                    <h5>Bekleyen Talep Yok</h5>
+                    <p>Şu anda onayınızı bekleyen herhangi bir ders kayıt talebi bulunmuyor.</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var studentRecord in Model.OnayBekleyenler)
+                {
+                    <div class="student-card">
+                        <div class="student-info w-75">
+                            <div class="student-name">@studentRecord.Ogrenci.Kullanici.Ad @studentRecord.Ogrenci.Kullanici.Soyad</div>
+                            <div class="student-no mb-2">Öğrenci No: @studentRecord.Ogrenci.OgrenciNo</div>
+                            
+                            <div>
+                                <button type="button" class="btn btn-sm btn-outline-primary mb-2" data-bs-toggle="modal" data-bs-target="#modal-@studentRecord.Ogrenci.Id">
+                                    Ders Programını İncele (Taslak)
+                                </button>
+                            </div>
+                            
+                            <!-- Ekranda hızlıca görmek için ders rozetleri -->
+                            <div>
+                                @foreach (var kayit in studentRecord.DersKayitlari)
+                                {
+                                    <span class="course-badge" title="@kayit.AcilanDers.Ders.DersAdi">
+                                        @kayit.AcilanDers.Ders.DersKodu
+                                    </span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="action-buttons text-end w-25">
+                            <form asp-action="ApproveStudentRegistration" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="ogrenciId" value="@studentRecord.Ogrenci.Id" />
+                                <button type="submit" class="btn btn-success w-100 mb-2 fw-bold" onclick="return confirm('Bu öğrencinin tüm ders kayıtlarını ONAYLAMAK istediğinize emin misiniz?');">
+                                    Hepsini Onayla
+                                </button>
+                            </form>
+                            <form asp-action="RejectStudentRegistration" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="ogrenciId" value="@studentRecord.Ogrenci.Id" />
+                                <button type="submit" class="btn btn-outline-danger w-100 fw-bold" onclick="return confirm('Bu öğrencinin tüm ders kayıtlarını REDDETMEK istediğinize emin misiniz?');">
+                                    Hepsini Reddet
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Modal for Student Schedule -->
+                    <div class="modal fade" id="modal-@studentRecord.Ogrenci.Id" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header border-0">
+                                    <h5 class="modal-title fw-bold">@studentRecord.Ogrenci.Kullanici.Ad @studentRecord.Ogrenci.Kullanici.Soyad - Ders Taslağı</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                                </div>
+                                <div class="modal-body bg-light rounded-bottom">
+                                    <table class="table table-bordered bg-white shadow-sm">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Ders Kodu</th>
+                                                <th>Ders Adı</th>
+                                                <th>Gün & Saat</th>
+                                                <th>Sınıf / Amfi</th>
+                                                <th>Durum</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var kayit in studentRecord.DersKayitlari)
+                                            {
+                                                var programListesi = kayit.AcilanDers.DersProgramis.OrderBy(dp => dp.Gun).ThenBy(dp => dp.BaslangicSaati).ToList();
+                                                
+                                                <tr>
+                                                    <td class="fw-bold align-middle">@kayit.AcilanDers.Ders.DersKodu</td>
+                                                    <td class="align-middle">@kayit.AcilanDers.Ders.DersAdi</td>
+                                                    <td class="align-middle">
+                                                        @if (programListesi.Any())
+                                                        {
+                                                            <ul class="list-unstyled mb-0">
+                                                                @foreach (var prog in programListesi)
+                                                                {
+                                                                    <li><small class="fw-medium">@prog.Gun: @prog.BaslangicSaati.ToString("HH:mm") - @prog.BitisSaati.ToString("HH:mm")</small></li>
+                                                                }
+                                                            </ul>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted small">Program atanmamış</span>
+                                                        }
+                                                    </td>
+                                                    <td class="align-middle">
+                                                        @if (programListesi.Any())
+                                                        {
+                                                            <ul class="list-unstyled mb-0">
+                                                                @foreach (var prog in programListesi)
+                                                                {
+                                                                    <li><small>🚪 @prog.Salon.SalonAdi</small></li>
+                                                                }
+                                                            </ul>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted small">-</span>
+                                                        }
+                                                    </td>
+                                                    <td class="align-middle">
+                                                        @if (kayit.KayitDurumu == "Onay Bekliyor")
+                                                        {
+                                                            <span class="badge bg-warning text-dark">Bekliyor</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-secondary">@kayit.KayitDurumu</span>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        <!-- APPROVED TAB -->
+        <div class="tab-pane fade" id="approved" role="tabpanel">
+            @if (!Model.Onaylananlar.Any())
+            {
+                <div class="text-center py-5 text-muted bg-white rounded-4 shadow-sm border">
+                    <div class="fs-1 mb-3">📋</div>
+                    <h5>Kayıt Yok</h5>
+                    <p>Daha önce onayladığınız bir öğrenci kaydı bulunmuyor.</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var studentRecord in Model.Onaylananlar)
+                {
+                    <div class="student-card border-success border-2 border-top-0 border-end-0 border-bottom-0">
+                        <div class="student-info w-75">
+                            <div class="student-name">@studentRecord.Ogrenci.Kullanici.Ad @studentRecord.Ogrenci.Kullanici.Soyad</div>
+                            <div class="student-no mb-2">Öğrenci No: @studentRecord.Ogrenci.OgrenciNo</div>
+                            
+                            <div>
+                                @foreach (var kayit in studentRecord.DersKayitlari)
+                                {
+                                    <span class="course-badge">@kayit.AcilanDers.Ders.DersKodu</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="w-25 text-end">
+                            <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 fs-6 rounded-pill">
+                                ✅ Onaylandı
+                            </span>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        <!-- REJECTED TAB -->
+        <div class="tab-pane fade" id="rejected" role="tabpanel">
+            @if (!Model.Reddedilenler.Any())
+            {
+                <div class="text-center py-5 text-muted bg-white rounded-4 shadow-sm border">
+                    <div class="fs-1 mb-3">📋</div>
+                    <h5>Kayıt Yok</h5>
+                    <p>Daha önce reddettiğiniz bir öğrenci kaydı bulunmuyor.</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var studentRecord in Model.Reddedilenler)
+                {
+                    <div class="student-card border-danger border-2 border-top-0 border-end-0 border-bottom-0">
+                        <div class="student-info w-75">
+                            <div class="student-name">@studentRecord.Ogrenci.Kullanici.Ad @studentRecord.Ogrenci.Kullanici.Soyad</div>
+                            <div class="student-no mb-2">Öğrenci No: @studentRecord.Ogrenci.OgrenciNo</div>
+                            
+                            <div>
+                                @foreach (var kayit in studentRecord.DersKayitlari)
+                                {
+                                    <span class="course-badge">@kayit.AcilanDers.Ders.DersKodu</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="w-25 text-end">
+                            <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 fs-6 rounded-pill">
+                                ❌ Reddedildi
+                            </span>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+
