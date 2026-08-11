@@ -144,5 +144,131 @@ namespace OBS.Controllers
 
             return View(vm);
         }
+
+        // --- ADVISOR PORTAL ---
+        
+        // GET: /Academician/AdvisorApprovals
+        public async Task<IActionResult> AdvisorApprovals()
+        {
+            var academician = await GetCurrentAcademicianAsync();
+            if (academician == null) return RedirectToAction("Login", "Auth");
+
+            var activeSemester = await GetActiveSemesterAsync();
+            if (activeSemester == null)
+            {
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Danışmanı olduğu öğrencilerin aktif dönemdeki ders kayıtları
+            var ogrenciKayitlari = await _context.DersKaydis
+                .Include(dk => dk.Ogrenci)
+                    .ThenInclude(o => o.Kullanici)
+                .Include(dk => dk.AcilanDers)
+                    .ThenInclude(ad => ad.Ders)
+                .Include(dk => dk.AcilanDers)
+                    .ThenInclude(ad => ad.DersProgramis)
+                        .ThenInclude(dp => dp.Salon)
+                .Where(dk => dk.Ogrenci.DanismanId == academician.Id && dk.AcilanDers.DonemId == activeSemester.Id)
+                .ToListAsync();
+
+            var vm = new AcademicianAdvisorViewModel
+            {
+                OgretimUyesi = academician,
+                AktifDonem = activeSemester
+            };
+
+            var grouped = ogrenciKayitlari.GroupBy(dk => dk.OgrenciId).ToList();
+
+            foreach (var group in grouped)
+            {
+                var student = group.First().Ogrenci;
+                var records = group.ToList();
+
+                // Eğer taslağın içinde en az bir tane "Onay Bekliyor" varsa genel durum bekliyordur
+                var dto = new AdvisorStudentRegistrationDto
+                {
+                    Ogrenci = student,
+                    DersKayitlari = records
+                };
+
+                if (records.Any(r => r.KayitDurumu == "Onay Bekliyor"))
+                {
+                    dto.GenelDurum = "Onay Bekliyor";
+                    vm.OnayBekleyenler.Add(dto);
+                }
+                else if (records.All(r => r.KayitDurumu == "Reddedildi"))
+                {
+                    dto.GenelDurum = "Reddedildi";
+                    vm.Reddedilenler.Add(dto);
+                }
+                else if (records.Any(r => r.KayitDurumu == "Onaylandi"))
+                {
+                    dto.GenelDurum = "Onaylandi";
+                    vm.Onaylananlar.Add(dto);
+                }
+                else
+                {
+                    // "Kesinlestirildi" veya "Kontrol Edildi" durumları (Taslak) 
+                    // henüz onaya gönderilmediği için hocanın listesine düşmemeli veya ayrı düşmeli.
+                    // Şimdilik Onay Bekleyenlere dahil etmiyoruz.
+                }
+            }
+
+            return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApproveStudentRegistration(int ogrenciId)
+        {
+            var activeSemester = await GetActiveSemesterAsync();
+            var academician = await GetCurrentAcademicianAsync();
+            if (activeSemester == null || academician == null) return RedirectToAction(nameof(Index));
+
+            var records = await _context.DersKaydis
+                .Include(dk => dk.Ogrenci)
+                .Include(dk => dk.AcilanDers)
+                .Where(dk => dk.OgrenciId == ogrenciId && 
+                             dk.Ogrenci.DanismanId == academician.Id && 
+                             dk.AcilanDers.DonemId == activeSemester.Id &&
+                             dk.KayitDurumu == "Onay Bekliyor")
+                .ToListAsync();
+
+            foreach (var record in records)
+            {
+                record.KayitDurumu = "Onaylandi";
+                record.OnayTarihi = DateTime.Now;
+            }
+
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(AdvisorApprovals));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RejectStudentRegistration(int ogrenciId)
+        {
+            var activeSemester = await GetActiveSemesterAsync();
+            var academician = await GetCurrentAcademicianAsync();
+            if (activeSemester == null || academician == null) return RedirectToAction(nameof(Index));
+
+            var records = await _context.DersKaydis
+                .Include(dk => dk.Ogrenci)
+                .Include(dk => dk.AcilanDers)
+                .Where(dk => dk.OgrenciId == ogrenciId && 
+                             dk.Ogrenci.DanismanId == academician.Id && 
+                             dk.AcilanDers.DonemId == activeSemester.Id &&
+                             dk.KayitDurumu == "Onay Bekliyor")
+                .ToListAsync();
+
+            foreach (var record in records)
+            {
+                record.KayitDurumu = "Reddedildi";
+                record.OnayTarihi = DateTime.Now;
+            }
+
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(AdvisorApprovals));
+        }
     }
 }

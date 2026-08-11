@@ -59,7 +59,8 @@
                                     @foreach (var ad in Model.AcilanDersler)
                                     {
                                         bool isSelected = Model.SecilenDersler.Any(s => s.Id == ad.Id);
-                                        bool isRegistered = Model.MevcutKayitlar.Any(k => k.AcilanDersId == ad.Id);
+                                        bool isRegistered = Model.MevcutKayitlar.Any(k => k.AcilanDersId == ad.Id && k.KayitDurumu != "Reddedildi");
+                                        var rejectedRecord = Model.MevcutKayitlar.FirstOrDefault(k => k.AcilanDersId == ad.Id && k.KayitDurumu == "Reddedildi");
 
                                         <tr>
                                             <td>
@@ -85,7 +86,7 @@
                                             <td class="text-center">
                                                 @if (isRegistered)
                                                 {
-                                                    var kayit = Model.MevcutKayitlar.First(k => k.AcilanDersId == ad.Id);
+                                                    var kayit = Model.MevcutKayitlar.First(k => k.AcilanDersId == ad.Id && k.KayitDurumu != "Reddedildi");
                                                     if (kayit.KayitDurumu == "Onay Bekliyor")
                                                     {
                                                         <div class="d-flex align-items-center justify-content-center gap-2">
@@ -104,19 +105,29 @@
                                                 }
                                                 else if (isSelected)
                                                 {
-                                                    <form asp-action="RemoveCourseFromCache" method="post" class="d-inline">
-                                                        @Html.AntiForgeryToken()
-                                                        <input type="hidden" name="acilanDersId" value="@ad.Id" />
-                                                        <button type="submit" class="btn btn-sm btn-outline-danger px-3 rounded-pill fw-medium">Kaldır</button>
-                                                    </form>
+                                                    <div class="d-flex flex-column align-items-center gap-1">
+                                                        @if(rejectedRecord != null) {
+                                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger p-1" style="font-size: 0.7rem;">Eskiden Reddedildi</span>
+                                                        }
+                                                        <form asp-action="RemoveCourseFromCache" method="post" class="d-inline">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="acilanDersId" value="@ad.Id" />
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger px-3 rounded-pill fw-medium">Kaldır</button>
+                                                        </form>
+                                                    </div>
                                                 }
                                                 else
                                                 {
-                                                    <form asp-action="AddCourseToCache" method="post" class="d-inline">
-                                                        @Html.AntiForgeryToken()
-                                                        <input type="hidden" name="acilanDersId" value="@ad.Id" />
-                                                        <button type="submit" class="btn btn-sm btn-primary px-3 rounded-pill fw-medium">Seç</button>
-                                                    </form>
+                                                    <div class="d-flex flex-column align-items-center gap-1">
+                                                        @if(rejectedRecord != null) {
+                                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger p-1" style="font-size: 0.7rem;">Reddedildi</span>
+                                                        }
+                                                        <form asp-action="AddCourseToCache" method="post" class="d-inline">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="acilanDersId" value="@ad.Id" />
+                                                            <button type="submit" class="btn btn-sm btn-primary px-3 rounded-pill fw-medium">Seç</button>
+                                                        </form>
+                                                    </div>
                                                 }
                                             </td>
                                         </tr>

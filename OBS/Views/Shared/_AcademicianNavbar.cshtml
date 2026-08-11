@@ -1,5 +1,13 @@
+@inject OBS.Models.ObsContext _context
+@using System.Security.Claims
 @{
     var action = ViewContext.RouteData.Values["action"]?.ToString();
+    var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    var isAdvisor = false;
+    if (int.TryParse(userIdStr, out int userId))
+    {
+        isAdvisor = _context.Ogrencis.Any(o => o.Danisman!.KullaniciId == userId);
+    }
 }
 
 <aside class="bg-dark text-white p-3 position-fixed top-0 start-0 bottom-0 d-flex flex-column" style="width: 240px; z-index: 1050;">
@@ -18,11 +26,14 @@
                 📚 Derslerim
             </a>
         </li>
-        <li class="nav-item">
-            <a href="#" class="nav-link text-white">
-                📄 Ekran 2
-            </a>
-        </li>
+        @if (isAdvisor)
+        {
+            <li class="nav-item">
+                <a asp-controller="Academician" asp-action="AdvisorApprovals" class="nav-link text-white @(action == "AdvisorApprovals" ? "active bg-primary" : "")">
+                    👨‍🎓 Danışmanlık İşlemleri
+                </a>
+            </li>
+        }
         <li class="nav-item">
             <a href="#" class="nav-link text-white">
                 📄 Ekran 3
