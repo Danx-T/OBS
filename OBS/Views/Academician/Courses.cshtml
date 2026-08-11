@@ -1,0 +1,155 @@
+﻿@model OBS.ViewModels.Academician.AcademicianCoursesViewModel
+@{
+    ViewData["Title"] = "Derslerim";
+}
+
+<style>
+    :root {
+        --primary: #4338ca;
+        --secondary: #64748b;
+        --card-bg: rgba(255, 255, 255, 0.95);
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        padding: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+    
+    .page-header h1 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 8px 0;
+    }
+
+    .page-subtitle {
+        font-size: 1.1rem;
+        color: var(--secondary);
+        margin: 0;
+    }
+
+    .course-card {
+        background: white;
+        border-left: 4px solid var(--primary);
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        transition: transform 0.2s;
+        display: flex;
+        flex-direction: column;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .course-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+        color: inherit;
+    }
+
+    .course-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 15px;
+    }
+
+    .course-code {
+        font-weight: 800;
+        color: #1e293b;
+        font-size: 1.25rem;
+    }
+
+    .course-name {
+        color: var(--secondary);
+        font-size: 1rem;
+        font-weight: 500;
+    }
+
+    .course-stats {
+        display: flex;
+        gap: 15px;
+        margin-top: auto;
+    }
+
+    .stat-badge {
+        background: #f1f5f9;
+        color: #334155;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .action-btn {
+        margin-top: 15px;
+        align-self: flex-end;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="page-header">
+        <div>
+            <h1>📚 Derslerim</h1>
+            <p class="page-subtitle">Bu dönem verdiğiniz derslerin listesi ve kayıtlı öğrenci bilgileri.</p>
+        </div>
+        @if (Model.AktifDonem != null)
+        {
+            <div class="bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-pill fw-bold">
+                @Model.AktifDonem.AkademikYil - @Model.AktifDonem.Donem1 Dönemi
+            </div>
+        }
+    </div>
+
+    @if (!Model.VerilenDersler.Any())
+    {
+        <div class="text-center py-5 text-muted bg-white rounded-4 shadow-sm">
+            <div class="fs-1 mb-3">📂</div>
+            <h5>Kayıtlı Ders Bulunamadı</h5>
+            <p>Bu döneme ait açılmış bir dersiniz bulunmamaktadır.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var ders in Model.VerilenDersler)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <a asp-action="CourseStudents" asp-route-id="@ders.Id" class="course-card">
+                        <div class="course-header">
+                            <div>
+                                <div class="course-code">@ders.Ders.DersKodu</div>
+                                <div class="course-name">@ders.Ders.DersAdi</div>
+                            </div>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">Şube: @ders.SubeNo</span>
+                        </div>
+                        
+                        <div class="course-stats">
+                            <div class="stat-badge">
+                                👥 @ders.DersKaydis.Count(dk => dk.KayitDurumu == "Onaylandi") Öğrenci
+                            </div>
+                            <div class="stat-badge">
+                                🎯 @ders.Ders.Kredi Kredi
+                            </div>
+                        </div>
+
+                        <div class="action-btn text-primary fw-bold mt-3">
+                            Öğrencileri Gör &rarr;
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    }
+</div>
+
