@@ -1,18 +1,24 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
+using System.Linq;
 
 namespace OBS.Models;
 
 public partial class ObsContext : DbContext
 {
+    private readonly IHttpContextAccessor? _httpContextAccessor;
+
     public ObsContext()
     {
     }
 
-    public ObsContext(DbContextOptions<ObsContext> options)
+    public ObsContext(DbContextOptions<ObsContext> options, IHttpContextAccessor? httpContextAccessor = null)
         : base(options)
     {
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public virtual DbSet<AcilanDer> AcilanDers { get; set; }
@@ -489,4 +495,171 @@ public partial class ObsContext : DbContext
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+
+    public override int SaveChanges()
+    {
+        var auditEntries = OnBeforeSaveChanges();
+        var result = base.SaveChanges();
+        OnAfterSaveChanges(auditEntries);
+        return result;
+    }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        var auditEntries = OnBeforeSaveChanges();
+        var result = await base.SaveChangesAsync(cancellationToken);
+        await OnAfterSaveChangesAsync(auditEntries);
+        return result;
+    }
+
+    private List<AuditEntry> OnBeforeSaveChanges()
+    {
+        ChangeTracker.DetectChanges();
+        var auditEntries = new List<AuditEntry>();
+
+        var userIdString = _httpContextAccessor?.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        int? kullaniciId = null;
+        if (int.TryParse(userIdString, out int uid))
+        {
+            kullaniciId = uid;
+        }
+        var ipAddress = _httpContextAccessor?.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            if (entry.Entity is DenetimKaydi || entry.State == EntityState.Detached || entry.State == EntityState.Unchanged)
+                continue;
+
+            var tableName = entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name;
+            var actionType = entry.State == EntityState.Added ? "INSERT" :
+                             entry.State == EntityState.Modified ? "UPDATE" : "DELETE";
+
+            // Şifre vb. hassas alanları (eğer varsa) hariç tut
+            var excludedProperties = new[] { "SifreHash", "PasswordHash" };
+
+            foreach (var property in entry.Properties)
+            {
+                if (property.IsTemporary) continue;
+                if (excludedProperties.Contains(property.Metadata.Name)) continue;
+
+                string propertyName = property.Metadata.Name;
+
+                if (entry.State == EntityState.Added)
+                {
+                    // Added durumu için kayıt ID'si henüz yok, onu AfterSave'de alacağız.
+                    var auditEntry = new AuditEntry
+                    {
+                        Entry = entry,
+                        DenetimKaydi = new DenetimKaydi
+                        {
+                            KullaniciId = kullaniciId,
+                            IpAdresi = ipAddress,
+                            IslemTuru = "INSERT",
+                            EtkilenenTablo = tableName,
+                            EtkilenenSutun = propertyName,
+                            YeniDeger = property.CurrentValue?.ToString(),
+                            IslemZamani = DateTime.Now
+                        }
+                    };
+                    auditEntries.Add(auditEntry);
+                }
+                else if (entry.State == EntityState.Modified)
+                {
+                    if (property.IsModified)
+                    {
+                        var originalValue = property.OriginalValue?.ToString();
+                        var currentValue = property.CurrentValue?.ToString();
+
+                        if (originalValue != currentValue)
+                        {
+                            // Kayıt ID'sini al
+                            var primaryKey = entry.Metadata.FindPrimaryKey();
+                            var pkValue = primaryKey != null ? entry.Property(primaryKey.Properties[0].Name).CurrentValue : null;
+
+                            var auditEntry = new AuditEntry
+                            {
+                                Entry = entry,
+                                DenetimKaydi = new DenetimKaydi
+                                {
+                                    KullaniciId = kullaniciId,
+                                    IpAdresi = ipAddress,
+                                    IslemTuru = "UPDATE",
+                                    EtkilenenTablo = tableName,
+                                    EtkilenenKayitId = pkValue != null ? Convert.ToInt32(pkValue) : 0,
+                                    EtkilenenSutun = propertyName,
+                                    EskiDeger = originalValue,
+                                    YeniDeger = currentValue,
+                                    IslemZamani = DateTime.Now
+                                }
+                            };
+                            auditEntries.Add(auditEntry);
+                        }
+                    }
+                }
+                else if (entry.State == EntityState.Deleted)
+                {
+                    var primaryKey = entry.Metadata.FindPrimaryKey();
+                    var pkValue = primaryKey != null ? entry.Property(primaryKey.Properties[0].Name).OriginalValue : null;
+
+                    var auditEntry = new AuditEntry
+                    {
+                        Entry = entry,
+                        DenetimKaydi = new DenetimKaydi
+                        {
+                            KullaniciId = kullaniciId,
+                            IpAdresi = ipAddress,
+                            IslemTuru = "DELETE",
+                            EtkilenenTablo = tableName,
+                            EtkilenenKayitId = pkValue != null ? Convert.ToInt32(pkValue) : 0,
+                            EtkilenenSutun = propertyName,
+                            EskiDeger = property.OriginalValue?.ToString(),
+                            IslemZamani = DateTime.Now
+                        }
+                    };
+                    auditEntries.Add(auditEntry);
+                }
+            }
+        }
+        return auditEntries;
+    }
+
+    private void OnAfterSaveChanges(List<AuditEntry> auditEntries)
+    {
+        if (auditEntries == null || auditEntries.Count == 0) return;
+
+        foreach (var auditEntry in auditEntries)
+        {
+            if (auditEntry.DenetimKaydi.IslemTuru == "INSERT")
+            {
+                var primaryKey = auditEntry.Entry.Metadata.FindPrimaryKey();
+                var pkValue = primaryKey != null ? auditEntry.Entry.Property(primaryKey.Properties[0].Name).CurrentValue : null;
+                auditEntry.DenetimKaydi.EtkilenenKayitId = pkValue != null ? Convert.ToInt32(pkValue) : 0;
+            }
+            DenetimKaydis.Add(auditEntry.DenetimKaydi);
+        }
+        base.SaveChanges();
+    }
+
+    private async Task OnAfterSaveChangesAsync(List<AuditEntry> auditEntries)
+    {
+        if (auditEntries == null || auditEntries.Count == 0) return;
+
+        foreach (var auditEntry in auditEntries)
+        {
+            if (auditEntry.DenetimKaydi.IslemTuru == "INSERT")
+            {
+                var primaryKey = auditEntry.Entry.Metadata.FindPrimaryKey();
+                var pkValue = primaryKey != null ? auditEntry.Entry.Property(primaryKey.Properties[0].Name).CurrentValue : null;
+                auditEntry.DenetimKaydi.EtkilenenKayitId = pkValue != null ? Convert.ToInt32(pkValue) : 0;
+            }
+            DenetimKaydis.Add(auditEntry.DenetimKaydi);
+        }
+        await base.SaveChangesAsync();
+    }
+}
+
+public class AuditEntry
+{
+    public Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry Entry { get; set; } = null!;
+    public DenetimKaydi DenetimKaydi { get; set; } = null!;
 }

@@ -1,0 +1,117 @@
+﻿@model IEnumerable<OBS.Models.DenetimKaydi>
+@{
+    ViewData["Title"] = "Sistem Logları (Audit Logs)";
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Sistem Logları (Denetim Kayıtları)</h1>
+            <p class="text-muted">Veritabanında yapılan son @Model.Count() işlem listelenmektedir.</p>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered table-sm" style="font-size: 0.9rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 150px;">Tarih</th>
+                            <th style="width: 80px;">İşlem</th>
+                            <th>Tablo</th>
+                            <th>Sütun</th>
+                            <th>Kayıt ID</th>
+                            <th>Eski Değer</th>
+                            <th>Yeni Değer</th>
+                            <th>Kullanıcı (ID)</th>
+                            <th>IP Adresi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="9" class="text-center py-4">Henüz hiç log kaydı bulunmuyor.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var log in Model)
+                            {
+                                <tr>
+                                    <td>@log.IslemZamani.ToString("dd.MM.yyyy HH:mm:ss")</td>
+                                    <td>
+                                        @if (log.IslemTuru == "INSERT")
+                                        {
+                                            <span class="badge bg-success">@log.IslemTuru</span>
+                                        }
+                                        else if (log.IslemTuru == "UPDATE")
+                                        {
+                                            <span class="badge bg-warning text-dark">@log.IslemTuru</span>
+                                        }
+                                        else if (log.IslemTuru == "DELETE")
+                                        {
+                                            <span class="badge bg-danger">@log.IslemTuru</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">@log.IslemTuru</span>
+                                        }
+                                    </td>
+                                    <td class="fw-bold">@log.EtkilenenTablo</td>
+                                    <td>@log.EtkilenenSutun</td>
+                                    <td>@log.EtkilenenKayitId</td>
+                                    <td class="text-danger">@log.EskiDeger</td>
+                                    <td class="text-success">@log.YeniDeger</td>
+                                    <td>
+                                        @if (log.Kullanici != null)
+                                        {
+                                            <span title="Kullanıcı ID: @log.KullaniciId">@log.Kullanici.Ad @log.Kullanici.Soyad (@log.KullaniciId)</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Sistem (veya Silinmiş)</span>
+                                        }
+                                    </td>
+                                    <td>@log.IpAdresi</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            @if (totalPages > 1)
+            {
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                            <a class="page-link" asp-action="AuditLogs" asp-route-page="@(currentPage - 1)">Önceki</a>
+                        </li>
+                        
+                        @{
+                            int startPage = Math.Max(1, currentPage - 2);
+                            int endPage = Math.Min(totalPages, currentPage + 2);
+                        }
+
+                        @for (int i = startPage; i <= endPage; i++)
+                        {
+                            <li class="page-item @(i == currentPage ? "active" : "")">
+                                <a class="page-link" asp-action="AuditLogs" asp-route-page="@i">@i</a>
+                            </li>
+                        }
+
+                        <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                            <a class="page-link" asp-action="AuditLogs" asp-route-page="@(currentPage + 1)">Sonraki</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    </div>
+</div>
+
