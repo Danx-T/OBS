@@ -19,6 +19,7 @@ builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddSingleton<ITwoFactorService, TwoFactorService>();
 builder.Services.AddSingleton<IPasswordResetService, PasswordResetService>();
 builder.Services.AddSingleton<IPasswordSetupService, PasswordSetupService>();
+builder.Services.AddHttpContextAccessor(); // Eklenen servis: Audit Log için Kullanici ve IP bilgisi alımında kullanılacak.
 
 // Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

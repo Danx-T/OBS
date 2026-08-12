@@ -2185,5 +2185,30 @@ public class AdminController : Controller
         }
         return RedirectToAction(nameof(SinavProgramiYonetimi), new { donemId, fakulteId = program?.AcilanDers?.Ders?.Organizasyon?.UstOrganizasyonId, bolumId });
     }
+
+    // --- DENETİM KAYITLARI (AUDIT LOGS) ---
+    // GET: /Admin/AuditLogs
+    public async Task<IActionResult> AuditLogs(int page = 1)
+    {
+        int pageSize = 100;
+        
+        var totalRecords = await _context.DenetimKaydis.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
+        
+        // Ensure page is within valid range
+        page = Math.Max(1, Math.Min(page, Math.Max(1, totalPages)));
+        
+        var logs = await _context.DenetimKaydis
+            .Include(d => d.Kullanici)
+            .OrderByDescending(d => d.IslemZamani)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        ViewBag.CurrentPage = page;
+        ViewBag.TotalPages = totalPages;
+
+        return View(logs);
+    }
 }
 
