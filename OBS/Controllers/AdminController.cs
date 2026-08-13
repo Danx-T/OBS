@@ -2793,4 +2793,70 @@ public class AdminController : Controller
         TempData["Basari"] = "Dönem başarıyla güncellendi.";
         return RedirectToAction(nameof(DonemYonetimi));
     }
+
+    // --- DERS DÜZENLEME ---
+
+    [HttpGet]
+    public async Task<IActionResult> DersDuzenle(int id)
+    {
+        var ders = await _context.Ders.FindAsync(id);
+        if (ders == null) return NotFound();
+
+        var model = new OBS.ViewModels.DersDuzenleViewModel
+        {
+            Id = ders.Id,
+            OrganizasyonId = ders.OrganizasyonId,
+            DersKodu = ders.DersKodu,
+            DersAdi = ders.DersAdi,
+            Kredi = ders.Kredi,
+            Akts = ders.Akts,
+            Teorik = ders.Teorik,
+            Uygulama = ders.Uygulama,
+            DersTuru = ders.DersTuru,
+            AktiflikDurumu = ders.AktiflikDurumu
+        };
+
+        var bolumler = await _context.Organizasyons.Where(o => o.UstOrganizasyonId != null && o.Durum).ToListAsync();
+        ViewBag.Bolumler = new SelectList(bolumler, "Id", "Adi", model.OrganizasyonId);
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DersDuzenle(OBS.ViewModels.DersDuzenleViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            var bolumler = await _context.Organizasyons.Where(o => o.UstOrganizasyonId != null && o.Durum).ToListAsync();
+            ViewBag.Bolumler = new SelectList(bolumler, "Id", "Adi", model.OrganizasyonId);
+            return View(model);
+        }
+
+        var ders = await _context.Ders.FindAsync(model.Id);
+        if (ders == null) return NotFound();
+
+        var kodMevcut = await _context.Ders.AnyAsync(d => d.DersKodu == model.DersKodu && d.Id != model.Id);
+        if (kodMevcut)
+        {
+            ModelState.AddModelError("DersKodu", "Bu ders kodu sistemde zaten mevcut.");
+            var bolumler = await _context.Organizasyons.Where(o => o.UstOrganizasyonId != null && o.Durum).ToListAsync();
+            ViewBag.Bolumler = new SelectList(bolumler, "Id", "Adi", model.OrganizasyonId);
+            return View(model);
+        }
+
+        ders.OrganizasyonId = model.OrganizasyonId;
+        ders.DersKodu = model.DersKodu;
+        ders.DersAdi = model.DersAdi;
+        ders.Kredi = model.Kredi;
+        ders.Akts = model.Akts;
+        ders.Teorik = model.Teorik;
+        ders.Uygulama = model.Uygulama;
+        ders.DersTuru = model.DersTuru;
+        ders.AktiflikDurumu = model.AktiflikDurumu;
+
+        await _context.SaveChangesAsync();
+        TempData["Basari"] = "Ders bilgileri başarıyla güncellendi.";
+        return RedirectToAction(nameof(DersYonetimi));
+    }
 }
