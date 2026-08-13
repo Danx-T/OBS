@@ -22,6 +22,16 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a asp-controller="Admin" asp-action="OgrenciYonetimi" class="nav-link text-white @(action == "OgrenciYonetimi" ? "active bg-primary" : "")">
+                    🎓 Öğrenci Yönetimi
+                </a>
+            </li>
+            <li class="nav-item">
+                <a asp-controller="Admin" asp-action="OgretimUyesiYonetimi" class="nav-link text-white @(action == "OgretimUyesiYonetimi" ? "active bg-primary" : "")">
+                    👨‍🏫 Öğretim Üyesi Yönetimi
+                </a>
+            </li>
+            <li class="nav-item">
                 <a asp-controller="Admin" asp-action="DanismanAtama" class="nav-link text-white @(action == "DanismanAtama" ? "active bg-primary" : "")">
                     👨‍🏫 Danışman Atama
                 </a>
