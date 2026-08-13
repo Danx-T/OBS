@@ -380,6 +380,9 @@
                                 </td>
                                 <td class="text-end">
                                     <div class="d-flex justify-content-end align-items-center gap-2">
+                                        <a asp-action="RolDuzenle" asp-route-id="@r.Id" class="btn-action light">
+                                            <span>✏️</span> Düzenle
+                                        </a>
                                         <button type="button" class="btn-action light" onclick="openMatrixForRole(@r.Id)">
                                             <span>⚙️</span> Yetkileri Yönet
                                         </button>
@@ -443,7 +446,10 @@
                                     <span class="badge bg-secondary rounded-pill px-3 py-2">@kullananRolSayisi</span>
                                 </td>
                                 <td class="text-end">
-                                    <div class="d-flex justify-content-end align-items-center">
+                                    <div class="d-flex justify-content-end align-items-center gap-2">
+                                        <a asp-action="YetkiDuzenle" asp-route-id="@y.Id" class="btn-action light">
+                                            <span>✏️</span> Düzenle
+                                        </a>
                                         <form asp-action="YetkiSil" asp-controller="Admin" method="post" class="m-0 p-0" onsubmit="return confirm('@y.YetkiKodu yetkisini silmek istediğinize emin misiniz?');">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="id" value="@y.Id" />
