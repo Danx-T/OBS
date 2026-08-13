@@ -1,0 +1,91 @@
+@model OBS.ViewModels.OgretimUyesiDuzenleViewModel
+@{
+    ViewData["Title"] = "Öğretim Üyesi Düzenle";
+}
+
+<div class="container-fluid px-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark mb-0">✏️ Öğretim Üyesi Düzenle (@Model.Ad @Model.Soyad)</h2>
+        <a asp-action="OgretimUyesiYonetimi" class="btn btn-outline-secondary" style="border-radius:10px; font-weight:600;">
+            ← Geri Dön
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm" style="border-radius:15px; overflow:hidden;">
+        <div class="card-body p-4 p-md-5">
+            <form asp-action="OgretimUyesiDuzenle" method="post">
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="OgretimUyesiId" />
+                <input type="hidden" asp-for="Ad" />
+                <input type="hidden" asp-for="Soyad" />
+                
+                <div class="row g-4">
+                    
+                    <div class="col-md-6">
+                        <label asp-for="Unvan" class="form-label fw-bold text-muted">Unvan</label>
+                        <select asp-for="Unvan" class="form-select bg-light border-0" style="padding:0.75rem 1rem;">
+                            <option value="">Yok (Sadece Akademik Kadro)</option>
+                            <option value="Ogr. Gor.">Öğr. Gör.</option>
+                            <option value="Dr. Ogr. Uyesi">Dr. Öğr. Üyesi</option>
+                            <option value="Doc. Dr.">Doç. Dr.</option>
+                            <option value="Prof. Dr.">Prof. Dr.</option>
+                        </select>
+                        <span asp-validation-for="Unvan" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="KadroTipi" class="form-label fw-bold text-muted">Kadro Tipi</label>
+                        <select asp-for="KadroTipi" class="form-select bg-light border-0" style="padding:0.75rem 1rem;">
+                            <option value="">Seçiniz...</option>
+                            <option value="Kadrolu">Kadrolu</option>
+                            <option value="Sozlesmeli">Sözleşmeli</option>
+                            <option value="Yari Zamanli">Yarı Zamanlı</option>
+                            <option value="Misafir Ogretim Uyesi">Misafir Öğretim Üyesi</option>
+                        </select>
+                        <span asp-validation-for="KadroTipi" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Cinsiyet" class="form-label fw-bold text-muted">Cinsiyet</label>
+                        <select asp-for="Cinsiyet" class="form-select bg-light border-0" style="padding:0.75rem 1rem;">
+                            <option value="">Seçiniz...</option>
+                            <option value="Erkek">Erkek</option>
+                            <option value="Kadin">Kadın</option>
+                        </select>
+                        <span asp-validation-for="Cinsiyet" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="OrganizasyonId" class="form-label fw-bold text-muted">Bölüm (Organizasyon)</label>
+                        <select asp-for="OrganizasyonId" class="form-select bg-light border-0" style="padding:0.75rem 1rem;" asp-items="ViewBag.Bolumler">
+                            <option value="">Seçiniz...</option>
+                        </select>
+                        <span asp-validation-for="OrganizasyonId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="GorevBaslangic" class="form-label fw-bold text-muted">Görev Başlangıç Tarihi</label>
+                        <input asp-for="GorevBaslangic" type="date" class="form-control bg-light border-0" style="padding:0.75rem 1rem;" />
+                        <span asp-validation-for="GorevBaslangic" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="GorevBitis" class="form-label fw-bold text-muted">Görev Bitiş Tarihi</label>
+                        <input asp-for="GorevBitis" type="date" class="form-control bg-light border-0" style="padding:0.75rem 1rem;" />
+                        <span asp-validation-for="GorevBitis" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12 mt-5">
+                        <button type="submit" class="btn btn-primary px-5 py-2" style="border-radius:10px; font-weight:600;">
+                            Kaydet
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

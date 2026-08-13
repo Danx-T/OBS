@@ -245,6 +245,18 @@
         border-color: #ef4444;
     }
 
+    .btn-primary-soft {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+    }
+
+    .btn-primary-soft:hover {
+        background: #3b82f6;
+        color: #fff;
+        border-color: #3b82f6;
+    }
+
     /* ── DETAIL DRAWER ── */
     .detail-info {
         font-size: 0.78rem;
@@ -510,13 +522,18 @@
                                     </form>
                                 </td>
 
-                                <!-- Silme Butonu -->
+                                <!-- İşlemler -->
                                 <td style="text-align:center;">
-                                    <button type="button"
-                                            class="btn-action btn-danger-soft"
-                                            onclick="openDeleteModal(@k.Id, '@Html.Raw(k.AdSoyad.Replace("'", "\\'"))', '@k.Eposta')">
-                                        🗑️ Sil
-                                    </button>
+                                    <div class="d-flex gap-2 justify-content-center">
+                                        <a asp-action="KullaniciDuzenle" asp-route-id="@k.Id" class="btn-action btn-primary-soft">
+                                            ✏️ Düzenle
+                                        </a>
+                                        <button type="button"
+                                                class="btn-action btn-danger-soft"
+                                                onclick="openDeleteModal(@k.Id, '@Html.Raw(k.AdSoyad.Replace("'", "\\'"))', '@k.Eposta')">
+                                            🗑️ Sil
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         }

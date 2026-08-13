@@ -2398,5 +2398,194 @@ public class AdminController : Controller
 
         return View(logs);
     }
-}
 
+    // --- KULLANICI / ÖĞRENCİ / ÖĞRETİM ÜYESİ DÜZENLEME ---
+
+    [HttpGet]
+    public async Task<IActionResult> KullaniciDuzenle(int id)
+    {
+        var kullanici = await _context.Kullanicis.FindAsync(id);
+        if (kullanici == null) return NotFound();
+
+        var model = new OBS.ViewModels.KullaniciDuzenleViewModel
+        {
+            Id = kullanici.Id,
+            Ad = kullanici.Ad,
+            Soyad = kullanici.Soyad,
+            Eposta = kullanici.Eposta,
+            Telefon = kullanici.Telefon
+        };
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> KullaniciDuzenle(OBS.ViewModels.KullaniciDuzenleViewModel model)
+    {
+        if (!ModelState.IsValid) return View(model);
+
+        var kullanici = await _context.Kullanicis.FindAsync(model.Id);
+        if (kullanici == null) return NotFound();
+
+        var epostaMevcut = await _context.Kullanicis.AnyAsync(k => k.Eposta == model.Eposta && k.Id != model.Id);
+        if (epostaMevcut)
+        {
+            ModelState.AddModelError("Eposta", "Bu e-posta adresi zaten kullanılmakta.");
+            return View(model);
+        }
+
+        kullanici.Ad = model.Ad;
+        kullanici.Soyad = model.Soyad;
+        kullanici.Eposta = model.Eposta;
+        kullanici.Telefon = model.Telefon;
+        kullanici.SonGuncellenmeTarihi = DateTime.Now;
+
+        await _context.SaveChangesAsync();
+        TempData["Basari"] = "Kullanıcı bilgileri başarıyla güncellendi.";
+        return RedirectToAction(nameof(KullaniciYonetimi));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> OgrenciDuzenle(int id)
+    {
+        var ogrenci = await _context.Ogrencis
+            .Include(o => o.Kullanici)
+            .FirstOrDefaultAsync(o => o.KullaniciId == id);
+            
+        if (ogrenci == null) return NotFound();
+
+        var model = new OBS.ViewModels.OgrenciDuzenleViewModel
+        {
+            Id = ogrenci.KullaniciId,
+            OgrenciId = ogrenci.Id,
+            Ad = ogrenci.Kullanici.Ad,
+            Soyad = ogrenci.Kullanici.Soyad,
+            Cinsiyet = ogrenci.Cinsiyet,
+            OgrenciNo = ogrenci.OgrenciNo,
+            DanismanId = ogrenci.DanismanId,
+            OrganizasyonId = ogrenci.OrganizasyonId,
+            GirisTarihi = ogrenci.GirisTarihi,
+            OgrenciTipi = ogrenci.OgrenciTipi,
+            Durum = ogrenci.Durum,
+            MezuniyetTarihi = ogrenci.MezuniyetTarihi,
+            Sinif = ogrenci.Sinif
+        };
+
+        var danismanlar = await _context.OgretimUyesis
+            .Include(ou => ou.Kullanici)
+            .Select(ou => new { ou.Id, AdSoyad = ou.Unvan + " " + ou.Kullanici.Ad + " " + ou.Kullanici.Soyad })
+            .ToListAsync();
+            
+        var bolumler = await _context.Organizasyons
+            .Where(o => o.UstOrganizasyonId != null && o.Durum)
+            .ToListAsync();
+
+        ViewBag.Danismanlar = new SelectList(danismanlar, "Id", "AdSoyad", model.DanismanId);
+        ViewBag.Bolumler = new SelectList(bolumler, "Id", "Adi", model.OrganizasyonId);
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> OgrenciDuzenle(OBS.ViewModels.OgrenciDuzenleViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            var danismanlar = await _context.OgretimUyesis
+                .Include(ou => ou.Kullanici)
+                .Select(ou => new { ou.Id, AdSoyad = ou.Unvan + " " + ou.Kullanici.Ad + " " + ou.Kullanici.Soyad })
+                .ToListAsync();
+            var bolumler = await _context.Organizasyons
+                .Where(o => o.UstOrganizasyonId != null && o.Durum).ToListAsync();
+            ViewBag.Danismanlar = new SelectList(danismanlar, "Id", "AdSoyad", model.DanismanId);
+            ViewBag.Bolumler = new SelectList(bolumler, "Id", "Adi", model.OrganizasyonId);
+            return View(model);
+        }
+
+        var ogrenci = await _context.Ogrencis.FirstOrDefaultAsync(o => o.Id == model.OgrenciId);
+        if (ogrenci == null) return NotFound();
+
+        var ogrenciNoMevcut = await _context.Ogrencis.AnyAsync(o => o.OgrenciNo == model.OgrenciNo && o.Id != model.OgrenciId);
+        if (ogrenciNoMevcut)
+        {
+            ModelState.AddModelError("OgrenciNo", "Bu öğrenci numarası sistemde kayıtlı.");
+            var danismanlar = await _context.OgretimUyesis.Include(ou => ou.Kullanici).Select(ou => new { ou.Id, AdSoyad = ou.Unvan + " " + ou.Kullanici.Ad + " " + ou.Kullanici.Soyad }).ToListAsync();
+            var bolumler = await _context.Organizasyons.Where(o => o.UstOrganizasyonId != null && o.Durum).ToListAsync();
+            ViewBag.Danismanlar = new SelectList(danismanlar, "Id", "AdSoyad", model.DanismanId);
+            ViewBag.Bolumler = new SelectList(bolumler, "Id", "Adi", model.OrganizasyonId);
+            return View(model);
+        }
+
+        ogrenci.Cinsiyet = model.Cinsiyet;
+        ogrenci.OgrenciNo = model.OgrenciNo;
+        ogrenci.DanismanId = model.DanismanId;
+        ogrenci.OrganizasyonId = model.OrganizasyonId;
+        ogrenci.GirisTarihi = model.GirisTarihi;
+        ogrenci.OgrenciTipi = model.OgrenciTipi;
+        ogrenci.Durum = model.Durum;
+        ogrenci.MezuniyetTarihi = model.MezuniyetTarihi;
+        ogrenci.Sinif = model.Sinif;
+
+        await _context.SaveChangesAsync();
+        TempData["Basari"] = "Öğrenci bilgileri başarıyla güncellendi.";
+        return RedirectToAction(nameof(OgrenciYonetimi));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> OgretimUyesiDuzenle(int id)
+    {
+        var ogretimUyesi = await _context.OgretimUyesis
+            .Include(ou => ou.Kullanici)
+            .FirstOrDefaultAsync(ou => ou.KullaniciId == id);
+            
+        if (ogretimUyesi == null) return NotFound();
+
+        var model = new OBS.ViewModels.OgretimUyesiDuzenleViewModel
+        {
+            Id = ogretimUyesi.KullaniciId,
+            OgretimUyesiId = ogretimUyesi.Id,
+            Ad = ogretimUyesi.Kullanici.Ad,
+            Soyad = ogretimUyesi.Kullanici.Soyad,
+            Cinsiyet = ogretimUyesi.Cinsiyet,
+            Unvan = ogretimUyesi.Unvan,
+            OrganizasyonId = ogretimUyesi.OrganizasyonId,
+            KadroTipi = ogretimUyesi.KadroTipi,
+            GorevBaslangic = ogretimUyesi.GorevBaslangic,
+            GorevBitis = ogretimUyesi.GorevBitis
+        };
+
+        var bolumler = await _context.Organizasyons
+            .Where(o => o.UstOrganizasyonId != null && o.Durum)
+            .ToListAsync();
+        ViewBag.Bolumler = new SelectList(bolumler, "Id", "Adi", model.OrganizasyonId);
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> OgretimUyesiDuzenle(OBS.ViewModels.OgretimUyesiDuzenleViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            var bolumler = await _context.Organizasyons.Where(o => o.UstOrganizasyonId != null && o.Durum).ToListAsync();
+            ViewBag.Bolumler = new SelectList(bolumler, "Id", "Adi", model.OrganizasyonId);
+            return View(model);
+        }
+
+        var ogretimUyesi = await _context.OgretimUyesis.FirstOrDefaultAsync(ou => ou.Id == model.OgretimUyesiId);
+        if (ogretimUyesi == null) return NotFound();
+
+        ogretimUyesi.Cinsiyet = model.Cinsiyet;
+        ogretimUyesi.Unvan = model.Unvan;
+        ogretimUyesi.OrganizasyonId = model.OrganizasyonId;
+        ogretimUyesi.KadroTipi = model.KadroTipi;
+        ogretimUyesi.GorevBaslangic = model.GorevBaslangic;
+        ogretimUyesi.GorevBitis = model.GorevBitis;
+
+        await _context.SaveChangesAsync();
+        TempData["Basari"] = "Öğretim Üyesi bilgileri başarıyla güncellendi.";
+        return RedirectToAction(nameof(OgretimUyesiYonetimi));
+    }
+}
