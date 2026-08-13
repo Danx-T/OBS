@@ -1,0 +1,570 @@
+@model OBS.ViewModels.KullaniciYonetimViewModel
+@{
+    ViewData["Title"] = "Öğretim Üyesi Yönetimi";
+}
+
+<style>
+    :root {
+        --primary: #2563eb;
+        --primary-dark: #1e40af;
+        --success: #10b981;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --muted: #64748b;
+    }
+
+    .ky-wrap {
+        max-width: 1400px;
+        margin: 36px auto;
+        padding: 0 20px 80px;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+    }
+
+    /* ── HEADER ── */
+    .ky-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 28px;
+    }
+
+    .ky-title h1 {
+        font-size: 1.65rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0;
+        letter-spacing: -0.02em;
+    }
+
+    .ky-title p {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin: 4px 0 0;
+    }
+
+    /* ── STAT PILLS ── */
+    .stats-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .stat-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 0.82rem;
+    }
+
+    .stat-pill.total   { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+    .stat-pill.aktif   { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .stat-pill.pasif   { background: #fff7ed; color: #92400e; border: 1px solid #fde68a; }
+
+    /* ── FILTER CARD ── */
+    .filter-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 20px 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    /* ── TABLE CARD ── */
+    .table-card {
+        background: rgba(255,255,255,0.92);
+        backdrop-filter: blur(12px);
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.06);
+        overflow: hidden;
+    }
+
+    .table-custom {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table-custom th {
+        background: #f8fafc;
+        padding: 14px 16px;
+        font-size: 0.73rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #475569;
+        border-bottom: 1px solid #e2e8f0;
+        white-space: nowrap;
+    }
+
+    .table-custom td {
+        padding: 14px 16px;
+        font-size: 0.88rem;
+        color: #1e293b;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .table-custom tr:last-child td { border-bottom: none; }
+    .table-custom tr:hover td { background: #f8fafc; transition: background 0.12s; }
+
+    /* ── AVATAR ── */
+    .user-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+        letter-spacing: -0.02em;
+    }
+
+    .avatar-student   { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+    .avatar-teacher   { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+    .avatar-admin     { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+
+    /* ── BADGES ── */
+    .role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 3px 9px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.73rem;
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+        margin: 2px 2px 2px 0;
+    }
+
+    .perm-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 3px 9px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.7rem;
+        font-family: 'Fira Code', monospace;
+        background: #ecfdf5;
+        color: #047857;
+        border: 1px solid #a7f3d0;
+        margin: 2px 2px 2px 0;
+    }
+
+    /* ── STATUS TOGGLE ── */
+    .status-toggle {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 24px;
+    }
+
+    .status-toggle input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: #cbd5e1;
+        border-radius: 999px;
+        transition: 0.2s;
+    }
+
+    .toggle-slider:before {
+        content: "";
+        position: absolute;
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background: #fff;
+        border-radius: 50%;
+        transition: 0.2s;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    input:checked + .toggle-slider { background: #10b981; }
+    input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+    .status-label-aktif { color: #059669; font-size: 0.78rem; font-weight: 600; }
+    .status-label-pasif { color: #d97706; font-size: 0.78rem; font-weight: 600; }
+
+    /* ── TIP BADGE ── */
+    .tip-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 0.76rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .tip-ogrenci   { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+    .tip-ogretim   { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+    .tip-diger     { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+
+    /* ── BUTTONS ── */
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 7px 13px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .btn-danger-soft {
+        background: #fff1f2;
+        color: #be123c;
+        border: 1px solid #fecdd3;
+    }
+
+    .btn-danger-soft:hover {
+        background: #ef4444;
+        color: #fff;
+        border-color: #ef4444;
+    }
+
+    /* ── DETAIL DRAWER ── */
+    .detail-info {
+        font-size: 0.78rem;
+        color: var(--muted);
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--muted);
+    }
+
+    .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+
+    /* ── CONFIRM MODAL ── */
+    .confirm-modal-body { padding: 24px; }
+
+    /* ── SIFRE BADGE ── */
+    .sifre-badge {
+        font-size: 0.7rem;
+        padding: 2px 7px;
+        border-radius: 6px;
+        font-weight: 600;
+    }
+
+    .sifre-set   { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .sifre-unset { background: #fef9c3; color: #854d0e; border: 1px solid #fde68a; }
+
+    /* ── 2FA BADGE ── */
+    .twofa-badge {
+        font-size: 0.7rem;
+        padding: 2px 7px;
+        border-radius: 6px;
+        font-weight: 600;
+    }
+
+    .twofa-on  { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .twofa-off { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+
+    @@media (max-width: 768px) {
+        .ky-wrap { padding: 0 12px 60px; }
+        .table-custom th:nth-child(4),
+        .table-custom td:nth-child(4),
+        .table-custom th:nth-child(5),
+        .table-custom td:nth-child(5) { display: none; }
+    }
+</style>
+
+<div class="ky-wrap">
+
+    <!-- HEADER -->
+    <div class="ky-header">
+        <div class="ky-title">
+            <h1>👨‍🏫 Öğretim Üyesi Yönetimi</h1>
+            <p>Tüm öğretim üyelerini görüntüleyin, aktiflik durumunu değiştirin veya silin.</p>
+        </div>
+        <div class="stats-row">
+            <span class="stat-pill total">
+                📊 Toplam: @Model.Kullanicilar.Count
+            </span>
+            <span class="stat-pill aktif">
+                ✅ Aktif: @Model.Kullanicilar.Count(x => x.AktiflikDurumu)
+            </span>
+            <span class="stat-pill pasif">
+                ⚠️ Pasif: @Model.Kullanicilar.Count(x => !x.AktiflikDurumu)
+            </span>
+        </div>
+    </div>
+
+    <!-- ALERTS -->
+    @if (TempData["Basari"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm mb-4" role="alert" style="border-radius:12px;">
+            <strong>✓ Başarılı:</strong> @TempData["Basari"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Hata"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert" style="border-radius:12px;">
+            <strong>✕ Hata:</strong> @TempData["Hata"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- FİLTRE -->
+    <div class="filter-card">
+        <form method="get" asp-action="OgretimUyesiYonetimi" asp-controller="Admin" class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label fw-bold small text-muted mb-1">Arama</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">🔍</span>
+                    <input type="text" name="arama" class="form-control border-start-0"
+                           placeholder="Ad, Soyad veya E-posta..." value="@Model.Arama" />
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold small text-muted mb-1">Durum Filtresi</label>
+                <select name="durumFiltre" class="form-select">
+                    <option value="" selected="@(string.IsNullOrEmpty(Model.DurumFiltre))">Tümü</option>
+                    <option value="aktif" selected="@(Model.DurumFiltre == "aktif")">✅ Yalnızca Aktif</option>
+                    <option value="pasif" selected="@(Model.DurumFiltre == "pasif")">⚠️ Yalnızca Pasif</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1" style="border-radius:9px; font-weight:600;">
+                    Filtrele
+                </button>
+                @if (!string.IsNullOrWhiteSpace(Model.Arama) || !string.IsNullOrWhiteSpace(Model.DurumFiltre))
+                {
+                    <a asp-action="OgretimUyesiYonetimi" asp-controller="Admin"
+                       class="btn btn-light" style="border-radius:9px; font-weight:600;" title="Filtreyi Temizle">✕</a>
+                }
+            </div>
+        </form>
+    </div>
+
+    <!-- TABLO -->
+    <div class="table-card">
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Kullanıcı</th>
+                        <th>Tip / Bölüm</th>
+                        <th>Roller</th>
+                        <th>Yetkiler</th>
+                        <th>Hesap Bilgisi</th>
+                        <th style="text-align:center;">Aktiflik</th>
+                        <th style="text-align:center;">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Kullanicilar.Any())
+                    {
+                        <tr>
+                            <td colspan="7">
+                                <div class="empty-state">
+                                    <div class="icon">👤</div>
+                                    <p class="fw-semibold mb-1">Kullanıcı bulunamadı.</p>
+                                    <p class="small">Arama kriterlerinizi değiştirmeyi deneyin.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var k in Model.Kullanicilar)
+                        {
+                            var parts = k.AdSoyad.Split(' ');
+                            var initials = (parts.Length >= 2)
+                                ? $"{parts[0][0]}{parts[^1][0]}"
+                                : (k.AdSoyad.Length >= 1 ? k.AdSoyad[0].ToString() : "?");
+
+                            var avatarClass = k.KullaniciTipi == "Öğrenci" ? "avatar-student"
+                                           : k.KullaniciTipi == "Öğretim Üyesi" ? "avatar-teacher"
+                                           : "avatar-admin";
+
+                            var tipClass = k.KullaniciTipi == "Öğrenci" ? "tip-ogrenci"
+                                         : k.KullaniciTipi == "Öğretim Üyesi" ? "tip-ogretim"
+                                         : "tip-diger";
+
+                            var tipEmoji = k.KullaniciTipi == "Öğrenci" ? "🎓"
+                                         : k.KullaniciTipi == "Öğretim Üyesi" ? "👨‍🏫"
+                                         : "🔧";
+
+                            <tr>
+                                <!-- Kullanıcı -->
+                                <td>
+                                    <div style="display:flex; align-items:center; gap:12px;">
+                                        <div class="user-avatar @avatarClass">@initials.ToUpper()</div>
+                                        <div>
+                                            <div style="font-weight:700; color:#0f172a;">@k.AdSoyad</div>
+                                            <div style="font-size:0.78rem; color:#64748b;">@k.Eposta</div>
+                                            @if (!string.IsNullOrWhiteSpace(k.Telefon))
+                                            {
+                                                <div style="font-size:0.73rem; color:#94a3b8;">📞 @k.Telefon</div>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- Tip / Bölüm -->
+                                <td>
+                                    <span class="tip-badge @tipClass">@tipEmoji @k.KullaniciTipi</span>
+                                    @if (!string.IsNullOrWhiteSpace(k.BolumAdi))
+                                    {
+                                        <div class="detail-info mt-1">🏛 @k.BolumAdi</div>
+                                    }
+                                </td>
+
+                                <!-- Roller -->
+                                <td>
+                                    @if (k.Roller.Any())
+                                    {
+                                        @foreach (var r in k.Roller)
+                                        {
+                                            <span class="role-badge">🛡️ @r</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted" style="font-size:0.8rem;">— Rol yok —</span>
+                                    }
+                                </td>
+
+                                <!-- Yetkiler -->
+                                <td>
+                                    @if (k.Yetkiler.Any())
+                                    {
+                                        @foreach (var y in k.Yetkiler)
+                                        {
+                                            <span class="perm-badge">⚡ @y</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted" style="font-size:0.8rem;">— Ek yetki yok —</span>
+                                    }
+                                </td>
+
+                                <!-- Hesap Bilgisi -->
+                                <td>
+                                    <div style="display:flex; flex-direction:column; gap:5px;">
+                                        <span class="sifre-badge @(k.SifreBelirlenmisMi ? "sifre-set" : "sifre-unset")">
+                                            @(k.SifreBelirlenmisMi ? "🔐 Şifre Belirlendi" : "⚠️ Şifre Yok")
+                                        </span>
+                                        <span class="twofa-badge @(k.IkiFaktorluDogrulama ? "twofa-on" : "twofa-off")">
+                                            @(k.IkiFaktorluDogrulama ? "🔒 2FA Aktif" : "💤 2FA Kapalı")
+                                        </span>
+                                        <div class="detail-info">
+                                            📅 @k.OlusturmaTarihi.ToString("dd.MM.yyyy")
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- Aktiflik Toggle -->
+                                <td style="text-align:center;">
+                                    <form asp-action="KullaniciAktiflikToggle" asp-controller="Admin" method="post" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@k.Id" />
+                                        <input type="hidden" name="arama" value="@Model.Arama" />
+                                        <input type="hidden" name="durumFiltre" value="@Model.DurumFiltre" />
+                                        <input type="hidden" name="sourceAction" value="OgretimUyesiYonetimi" />
+                                        <label class="status-toggle" title="@(k.AktiflikDurumu ? "Pasife Al" : "Aktife Al")">
+                                            <input type="checkbox" @(k.AktiflikDurumu ? "checked" : "")
+                                                   onchange="this.form.submit()" />
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                        <div class="@(k.AktiflikDurumu ? "status-label-aktif" : "status-label-pasif")" style="margin-top:4px;">
+                                            @(k.AktiflikDurumu ? "Aktif" : "Pasif")
+                                        </div>
+                                    </form>
+                                </td>
+
+                                <!-- Silme Butonu -->
+                                <td style="text-align:center;">
+                                    <button type="button"
+                                            class="btn-action btn-danger-soft"
+                                            onclick="openDeleteModal(@k.Id, '@Html.Raw(k.AdSoyad.Replace("'", "\\'"))', '@k.Eposta')">
+                                        🗑️ Sil
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- SİLME ONAY MODALI -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger">🗑️ Kullanıcı Silme Onayı</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-3 px-4">
+                <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:10px; padding:14px 16px; margin-bottom:16px;">
+                    <p class="mb-1" style="font-weight:700; color:#be123c;">⚠️ Bu işlem geri alınamaz!</p>
+                    <p class="mb-0" style="font-size:0.87rem; color:#9f1239;">
+                        Kullanıcı silindiğinde; tüm rol atamaları, yetki kayıtları ve ilişkili profil bilgileri
+                        (öğrenci / öğretim üyesi kaydı dahil) kalıcı olarak silinir.
+                    </p>
+                </div>
+                <p class="mb-1" style="font-size:0.9rem;">Aşağıdaki kullanıcıyı silmek istediğinize emin misiniz?</p>
+                <div style="background:#f8fafc; border-radius:10px; padding:12px 16px; margin-top:8px;">
+                    <div style="font-weight:700; font-size:1rem;" id="deleteUserName"></div>
+                    <div style="font-size:0.82rem; color:#64748b;" id="deleteUserEmail"></div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 px-4 pb-4">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius:9px;">İptal</button>
+                <form id="deleteForm" asp-action="KullaniciSil" asp-controller="Admin" method="post" style="display:inline;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" id="deleteUserId" />
+                    <input type="hidden" name="arama" value="@Model.Arama" />
+                    <input type="hidden" name="durumFiltre" value="@Model.DurumFiltre" />
+                    <input type="hidden" name="sourceAction" value="OgretimUyesiYonetimi" />
+                    <button type="submit" class="btn btn-danger" style="border-radius:9px; font-weight:700; padding:9px 22px;">
+                        🗑️ Evet, Sil
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openDeleteModal(id, adSoyad, eposta) {
+            document.getElementById('deleteUserId').value = id;
+            document.getElementById('deleteUserName').textContent = adSoyad;
+            document.getElementById('deleteUserEmail').textContent = eposta;
+            const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            modal.show();
+        }
+    </script>
+}
