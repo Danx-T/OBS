@@ -2588,4 +2588,84 @@ public class AdminController : Controller
         TempData["Basari"] = "Öğretim Üyesi bilgileri başarıyla güncellendi.";
         return RedirectToAction(nameof(OgretimUyesiYonetimi));
     }
+
+    // --- ROL / YETKİ DÜZENLEME ---
+
+    [HttpGet]
+    public async Task<IActionResult> RolDuzenle(int id)
+    {
+        var rol = await _context.Rols.FindAsync(id);
+        if (rol == null) return NotFound();
+
+        var model = new OBS.ViewModels.RolDuzenleViewModel
+        {
+            Id = rol.Id,
+            RolAdi = rol.RolAdi,
+            Aciklama = rol.Aciklama
+        };
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RolDuzenle(OBS.ViewModels.RolDuzenleViewModel model)
+    {
+        if (!ModelState.IsValid) return View(model);
+
+        var rol = await _context.Rols.FindAsync(model.Id);
+        if (rol == null) return NotFound();
+
+        var isimMevcut = await _context.Rols.AnyAsync(r => r.RolAdi == model.RolAdi && r.Id != model.Id);
+        if (isimMevcut)
+        {
+            ModelState.AddModelError("RolAdi", "Bu rol adı zaten kullanılıyor.");
+            return View(model);
+        }
+
+        rol.RolAdi = model.RolAdi;
+        rol.Aciklama = model.Aciklama;
+
+        await _context.SaveChangesAsync();
+        TempData["Basari"] = "Rol başarıyla güncellendi.";
+        return RedirectToAction(nameof(RolYetkiYonetimi));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> YetkiDuzenle(int id)
+    {
+        var yetki = await _context.Yetkis.FindAsync(id);
+        if (yetki == null) return NotFound();
+
+        var model = new OBS.ViewModels.YetkiDuzenleViewModel
+        {
+            Id = yetki.Id,
+            YetkiKodu = yetki.YetkiKodu,
+            Aciklama = yetki.Aciklama
+        };
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> YetkiDuzenle(OBS.ViewModels.YetkiDuzenleViewModel model)
+    {
+        if (!ModelState.IsValid) return View(model);
+
+        var yetki = await _context.Yetkis.FindAsync(model.Id);
+        if (yetki == null) return NotFound();
+
+        var kodMevcut = await _context.Yetkis.AnyAsync(y => y.YetkiKodu == model.YetkiKodu && y.Id != model.Id);
+        if (kodMevcut)
+        {
+            ModelState.AddModelError("YetkiKodu", "Bu yetki kodu zaten kullanılıyor.");
+            return View(model);
+        }
+
+        yetki.YetkiKodu = model.YetkiKodu;
+        yetki.Aciklama = model.Aciklama;
+
+        await _context.SaveChangesAsync();
+        TempData["Basari"] = "Yetki başarıyla güncellendi.";
+        return RedirectToAction(nameof(RolYetkiYonetimi));
+    }
 }
