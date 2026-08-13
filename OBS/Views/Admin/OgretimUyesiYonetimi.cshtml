@@ -334,30 +334,60 @@
     <!-- FİLTRE -->
     <div class="filter-card">
         <form method="get" asp-action="OgretimUyesiYonetimi" asp-controller="Admin" class="row g-3 align-items-end">
-            <div class="col-md-5">
+            <div class="col-md-2">
                 <label class="form-label fw-bold small text-muted mb-1">Arama</label>
                 <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0">🔍</span>
-                    <input type="text" name="arama" class="form-control border-start-0"
-                           placeholder="Ad, Soyad veya E-posta..." value="@Model.Arama" />
+                    <span class="input-group-text bg-light border-end-0 px-2">🔍</span>
+                    <input type="text" name="arama" class="form-control border-start-0 px-1"
+                           placeholder="Arama..." value="@Model.Arama" />
                 </div>
             </div>
-            <div class="col-md-4">
-                <label class="form-label fw-bold small text-muted mb-1">Durum Filtresi</label>
-                <select name="durumFiltre" class="form-select">
+            <div class="col-md-2">
+                <label class="form-label fw-bold small text-muted mb-1">Durum</label>
+                <select name="durumFiltre" class="form-select px-2">
                     <option value="" selected="@(string.IsNullOrEmpty(Model.DurumFiltre))">Tümü</option>
-                    <option value="aktif" selected="@(Model.DurumFiltre == "aktif")">✅ Yalnızca Aktif</option>
-                    <option value="pasif" selected="@(Model.DurumFiltre == "pasif")">⚠️ Yalnızca Pasif</option>
+                    <option value="aktif" selected="@(Model.DurumFiltre == "aktif")">Aktif</option>
+                    <option value="pasif" selected="@(Model.DurumFiltre == "pasif")">Pasif</option>
                 </select>
             </div>
-            <div class="col-md-3 d-flex gap-2">
-                <button type="submit" class="btn btn-primary flex-grow-1" style="border-radius:9px; font-weight:600;">
+            <div class="col-md-2">
+                <label class="form-label fw-bold small text-muted mb-1">Kadro Tipi</label>
+                <select name="kadroTipiFiltre" class="form-select px-2">
+                    <option value="">Tümü</option>
+                    <option value="Kadrolu" selected="@(ViewBag.KadroTipiFiltre == "Kadrolu")">Kadrolu</option>
+                    <option value="Sozlesmeli" selected="@(ViewBag.KadroTipiFiltre == "Sozlesmeli")">Sözleşmeli</option>
+                    <option value="Yari Zamanli" selected="@(ViewBag.KadroTipiFiltre == "Yari Zamanli")">Yarı Zamanlı</option>
+                    <option value="Misafir Ogretim Uyesi" selected="@(ViewBag.KadroTipiFiltre == "Misafir Ogretim Uyesi")">Misafir Öğretim Üyesi</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold small text-muted mb-1">Cinsiyet</label>
+                <select name="cinsiyetFiltre" class="form-select px-2">
+                    <option value="">Tümü</option>
+                    <option value="Erkek" selected="@(ViewBag.CinsiyetFiltre == "Erkek")">Erkek</option>
+                    <option value="Kadin" selected="@(ViewBag.CinsiyetFiltre == "Kadin")">Kadın</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold small text-muted mb-1">Fakülte</label>
+                <select name="fakulteIdFiltre" id="fakulteSelect" class="form-select px-2" asp-items="ViewBag.Fakulteler">
+                    <option value="">Tümü</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold small text-muted mb-1">Bölüm</label>
+                <select name="organizasyonIdFiltre" id="bolumSelect" class="form-select px-2" asp-items="ViewBag.Bolumler">
+                    <option value="">Tümü</option>
+                </select>
+            </div>
+            <div class="col-12 mt-3 d-flex gap-2 justify-content-end">
+                <button type="submit" class="btn btn-primary" style="border-radius:9px; font-weight:600; min-width: 120px;">
                     Filtrele
                 </button>
-                @if (!string.IsNullOrWhiteSpace(Model.Arama) || !string.IsNullOrWhiteSpace(Model.DurumFiltre))
+                @if (!string.IsNullOrWhiteSpace(Model.Arama) || !string.IsNullOrWhiteSpace(Model.DurumFiltre) || ViewBag.KadroTipiFiltre != null || ViewBag.CinsiyetFiltre != null || ViewBag.FakulteIdFiltre != null || ViewBag.OrganizasyonIdFiltre != null)
                 {
                     <a asp-action="OgretimUyesiYonetimi" asp-controller="Admin"
-                       class="btn btn-light" style="border-radius:9px; font-weight:600;" title="Filtreyi Temizle">✕</a>
+                       class="btn btn-light" style="border-radius:9px; font-weight:600;" title="Filtreyi Temizle">Temizle ✕</a>
                 }
             </div>
         </form>
@@ -566,5 +596,38 @@
             const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
             modal.show();
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const bolumlerJson = @Html.Raw(ViewBag.BolumlerJson ?? "[]");
+            const fakulteSelect = document.getElementById('fakulteSelect');
+            const bolumSelect = document.getElementById('bolumSelect');
+            const selectedBolumId = '@ViewBag.OrganizasyonIdFiltre';
+
+            function updateBolumler(resetVal) {
+                const fakulteId = fakulteSelect.value;
+                bolumSelect.innerHTML = '<option value="">Tümü</option>';
+                
+                bolumlerJson.forEach(b => {
+                    if (!fakulteId || b.UstOrganizasyonId == fakulteId) {
+                        const opt = document.createElement('option');
+                        opt.value = b.Id;
+                        opt.textContent = b.Adi;
+                        if (!resetVal && b.Id == selectedBolumId) {
+                            opt.selected = true;
+                        }
+                        bolumSelect.appendChild(opt);
+                    }
+                });
+            }
+
+            if (fakulteSelect && bolumSelect) {
+                fakulteSelect.addEventListener('change', () => {
+                    updateBolumler(true);
+                });
+                
+                // İlk yüklemede çalıştır
+                updateBolumler(false);
+            }
+        });
     </script>
 }

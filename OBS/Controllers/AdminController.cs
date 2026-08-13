@@ -698,7 +698,7 @@ public class AdminController : Controller
 
     // GET: /Admin/OgrenciYonetimi
     [HttpGet]
-    public async Task<IActionResult> OgrenciYonetimi(string? arama, string? durumFiltre)
+    public async Task<IActionResult> OgrenciYonetimi(string? arama, string? durumFiltre, string? ogrenciTipiFiltre, string? cinsiyetFiltre, int? fakulteIdFiltre, int? organizasyonIdFiltre)
     {
         var query = _context.Kullanicis
             .Include(k => k.KullaniciRols.Where(kr => kr.AktiflikDurumu))
@@ -724,6 +724,24 @@ public class AdminController : Controller
             query = query.Where(k => k.AktiflikDurumu);
         else if (durumFiltre == "pasif")
             query = query.Where(k => !k.AktiflikDurumu);
+
+        // Öğrenci Tipi filtresi
+        if (!string.IsNullOrWhiteSpace(ogrenciTipiFiltre))
+            query = query.Where(k => k.Ogrenci!.OgrenciTipi == ogrenciTipiFiltre);
+
+        // Cinsiyet filtresi
+        if (!string.IsNullOrWhiteSpace(cinsiyetFiltre))
+            query = query.Where(k => k.Ogrenci!.Cinsiyet == cinsiyetFiltre);
+
+        // Organizasyon filtresi
+        if (organizasyonIdFiltre.HasValue && organizasyonIdFiltre.Value > 0)
+        {
+            query = query.Where(k => k.Ogrenci!.OrganizasyonId == organizasyonIdFiltre.Value);
+        }
+        else if (fakulteIdFiltre.HasValue && fakulteIdFiltre.Value > 0)
+        {
+            query = query.Where(k => k.Ogrenci!.Organizasyon!.UstOrganizasyonId == fakulteIdFiltre.Value);
+        }
 
         var kullanicilar = await query.OrderBy(k => k.Ad).ThenBy(k => k.Soyad).ToListAsync();
 
@@ -752,12 +770,29 @@ public class AdminController : Controller
             TipFiltre     = "Ogrenci"
         };
 
+        var tumOrganizasyonlar = await _context.Organizasyons
+            .Where(o => o.Durum)
+            .OrderBy(o => o.Adi)
+            .ToListAsync();
+
+        var fakulteler = tumOrganizasyonlar.Where(o => o.UstOrganizasyonId == null).ToList();
+        var bolumler = tumOrganizasyonlar.Where(o => o.UstOrganizasyonId != null).ToList();
+
+        ViewBag.Fakulteler = new SelectList(fakulteler, "Id", "Adi", fakulteIdFiltre);
+        ViewBag.Bolumler = new SelectList(bolumler, "Id", "Adi", organizasyonIdFiltre);
+        ViewBag.BolumlerJson = System.Text.Json.JsonSerializer.Serialize(bolumler.Select(b => new { b.Id, b.Adi, b.UstOrganizasyonId }));
+
+        ViewBag.FakulteIdFiltre = fakulteIdFiltre;
+        ViewBag.OgrenciTipiFiltre = ogrenciTipiFiltre;
+        ViewBag.CinsiyetFiltre = cinsiyetFiltre;
+        ViewBag.OrganizasyonIdFiltre = organizasyonIdFiltre;
+
         return View(model);
     }
 
     // GET: /Admin/OgretimUyesiYonetimi
     [HttpGet]
-    public async Task<IActionResult> OgretimUyesiYonetimi(string? arama, string? durumFiltre)
+    public async Task<IActionResult> OgretimUyesiYonetimi(string? arama, string? durumFiltre, string? cinsiyetFiltre, int? fakulteIdFiltre, int? organizasyonIdFiltre, string? kadroTipiFiltre)
     {
         var query = _context.Kullanicis
             .Include(k => k.KullaniciRols.Where(kr => kr.AktiflikDurumu))
@@ -783,6 +818,24 @@ public class AdminController : Controller
             query = query.Where(k => k.AktiflikDurumu);
         else if (durumFiltre == "pasif")
             query = query.Where(k => !k.AktiflikDurumu);
+
+        // Cinsiyet filtresi
+        if (!string.IsNullOrWhiteSpace(cinsiyetFiltre))
+            query = query.Where(k => k.OgretimUyesi!.Cinsiyet == cinsiyetFiltre);
+
+        // Organizasyon filtresi
+        if (organizasyonIdFiltre.HasValue && organizasyonIdFiltre.Value > 0)
+        {
+            query = query.Where(k => k.OgretimUyesi!.OrganizasyonId == organizasyonIdFiltre.Value);
+        }
+        else if (fakulteIdFiltre.HasValue && fakulteIdFiltre.Value > 0)
+        {
+            query = query.Where(k => k.OgretimUyesi!.Organizasyon!.UstOrganizasyonId == fakulteIdFiltre.Value);
+        }
+
+        // Kadro Tipi filtresi
+        if (!string.IsNullOrWhiteSpace(kadroTipiFiltre))
+            query = query.Where(k => k.OgretimUyesi!.KadroTipi == kadroTipiFiltre);
 
         var kullanicilar = await query.OrderBy(k => k.Ad).ThenBy(k => k.Soyad).ToListAsync();
 
@@ -810,6 +863,23 @@ public class AdminController : Controller
             DurumFiltre   = durumFiltre,
             TipFiltre     = "OgretimUyesi"
         };
+
+        var tumOrganizasyonlar = await _context.Organizasyons
+            .Where(o => o.Durum)
+            .OrderBy(o => o.Adi)
+            .ToListAsync();
+
+        var fakulteler = tumOrganizasyonlar.Where(o => o.UstOrganizasyonId == null).ToList();
+        var bolumler = tumOrganizasyonlar.Where(o => o.UstOrganizasyonId != null).ToList();
+
+        ViewBag.Fakulteler = new SelectList(fakulteler, "Id", "Adi", fakulteIdFiltre);
+        ViewBag.Bolumler = new SelectList(bolumler, "Id", "Adi", organizasyonIdFiltre);
+        ViewBag.BolumlerJson = System.Text.Json.JsonSerializer.Serialize(bolumler.Select(b => new { b.Id, b.Adi, b.UstOrganizasyonId }));
+
+        ViewBag.FakulteIdFiltre = fakulteIdFiltre;
+        ViewBag.CinsiyetFiltre = cinsiyetFiltre;
+        ViewBag.OrganizasyonIdFiltre = organizasyonIdFiltre;
+        ViewBag.KadroTipiFiltre = kadroTipiFiltre;
 
         return View(model);
     }
