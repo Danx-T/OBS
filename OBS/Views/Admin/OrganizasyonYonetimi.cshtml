@@ -359,21 +359,26 @@
                                 _ => "diger"
                             };
 
-                            <a href="@Url.Action("OrganizasyonYonetimi", "Admin", new { fakulteId = f.Id })"
-                               class="fakulte-item @(isActive ? "selected" : "")">
-                                <span class="f-name">
-                                    <span>@(isActive ? "📂" : "📁")</span>
-                                    <span>@f.Adi</span>
-                                    @if (!string.IsNullOrEmpty(f.Kodu))
-                                    {
-                                        <span class="kod-chip">@f.Kodu</span>
-                                    }
-                                </span>
-                                <span class="f-meta">
-                                    <span class="type-badge @tbClass">@(f.Tipi == "Fakulte" ? "Fakülte" : f.Tipi)</span>
-                                    <span class="dot @(f.Durum ? "aktif" : "pasif")" title="@(f.Durum ? "Aktif" : "Pasif")"></span>
-                                </span>
-                            </a>
+                            <div class="d-flex align-items-center mb-2 gap-2">
+                                <a href="@Url.Action("OrganizasyonYonetimi", "Admin", new { fakulteId = f.Id })"
+                                   class="fakulte-item @(isActive ? "selected" : "") flex-grow-1 mb-0">
+                                    <span class="f-name">
+                                        <span>@(isActive ? "📂" : "📁")</span>
+                                        <span>@f.Adi</span>
+                                        @if (!string.IsNullOrEmpty(f.Kodu))
+                                        {
+                                            <span class="kod-chip">@f.Kodu</span>
+                                        }
+                                    </span>
+                                    <span class="f-meta">
+                                        <span class="type-badge @tbClass">@(f.Tipi == "Fakulte" ? "Fakülte" : f.Tipi)</span>
+                                        <span class="dot @(f.Durum ? "aktif" : "pasif")" title="@(f.Durum ? "Aktif" : "Pasif")"></span>
+                                    </span>
+                                </a>
+                                <a asp-action="OrganizasyonDuzenle" asp-route-id="@f.Id" class="btn btn-sm btn-outline-primary me-2" style="padding: 4px 8px; border-radius: 8px;" title="Düzenle">
+                                    ✏️
+                                </a>
+                            </div>
                         }
                     }
                 </div>
@@ -429,6 +434,9 @@
                         </span>
                         <div class="d-flex align-items-center gap-2">
                             <span class="cnt-badge">@bolumler.Count</span>
+                            <a asp-action="OrganizasyonDuzenle" asp-route-id="@secilenFakulte.Id" class="btn-action btn-primary-soft">
+                                ✏️ Düzenle
+                            </a>
                             @if (!bolumler.Any())
                             {
                                 <form asp-action="OrganizasyonSil" asp-controller="Admin" method="post" class="m-0"
@@ -475,15 +483,20 @@
                                         <span class="dot @(b.Durum ? "aktif" : "pasif")"
                                               title="@(b.Durum ? "Aktif" : "Pasif")"></span>
                                     </span>
-                                    <form asp-action="OrganizasyonSil" asp-controller="Admin" method="post" class="m-0"
-                                          onsubmit="return confirm('Bu bölümü silmek istediğinizden emin misiniz?')">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@b.Id" />
-                                        <input type="hidden" name="geriDonFakulteId" value="@secilenFakulte.Id" />
-                                        <button type="submit" class="btn-action btn-danger-soft" id="bolumSil_@b.Id">
-                                            🗑️ Sil
-                                        </button>
-                                    </form>
+                                    <div class="d-flex gap-2">
+                                        <a asp-action="OrganizasyonDuzenle" asp-route-id="@b.Id" class="btn-action btn-primary-soft">
+                                            ✏️ Düzenle
+                                        </a>
+                                        <form asp-action="OrganizasyonSil" asp-controller="Admin" method="post" class="m-0"
+                                              onsubmit="return confirm('Bu bölümü silmek istediğinizden emin misiniz?')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@b.Id" />
+                                            <input type="hidden" name="geriDonFakulteId" value="@secilenFakulte.Id" />
+                                            <button type="submit" class="btn-action btn-danger-soft" id="bolumSil_@b.Id">
+                                                🗑️ Sil
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                             }
                         }

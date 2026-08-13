@@ -346,14 +346,19 @@
                                                 </span>
                                             </td>
                                             <td class="text-end">
-                                                <form asp-action="DonemSil" asp-controller="Admin" method="post" class="m-0"
-                                                      onsubmit="return confirm('@d.AkademikYil @d.Donem1 dönemini silmek istediğinize emin misiniz?');">
-                                                    @Html.AntiForgeryToken()
-                                                    <input type="hidden" name="id" value="@d.Id" />
-                                                    <button type="submit" class="btn-action btn-danger-soft">
-                                                        🗑️ Sil
-                                                    </button>
-                                                </form>
+                                                <div class="d-flex justify-content-end gap-2">
+                                                    <a asp-action="DonemDuzenle" asp-route-id="@d.Id" class="btn-action" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">
+                                                        ✏️ Düzenle
+                                                    </a>
+                                                    <form asp-action="DonemSil" asp-controller="Admin" method="post" class="m-0"
+                                                          onsubmit="return confirm('@d.AkademikYil @d.Donem1 dönemini silmek istediğinize emin misiniz?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@d.Id" />
+                                                        <button type="submit" class="btn-action btn-danger-soft">
+                                                            🗑️ Sil
+                                                        </button>
+                                                    </form>
+                                                </div>
                                             </td>
                                         </tr>
                                     }

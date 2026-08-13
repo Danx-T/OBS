@@ -1,0 +1,82 @@
+@model OBS.ViewModels.OrganizasyonDuzenleViewModel
+@{
+    ViewData["Title"] = "Organizasyon Düzenle";
+}
+
+<div class="container-fluid px-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark mb-0">✏️ Organizasyon Düzenle</h2>
+        <a asp-action="OrganizasyonYonetimi" class="btn btn-outline-secondary" style="border-radius:10px; font-weight:600;">
+            ← Geri Dön
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm" style="border-radius:15px; overflow:hidden;">
+        <div class="card-body p-4 p-md-5">
+            <form asp-action="OrganizasyonDuzenle" method="post">
+                <input type="hidden" asp-for="Id" />
+                
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label asp-for="Tipi" class="form-label fw-bold text-muted">Organizasyon Tipi</label>
+                        <select asp-for="Tipi" class="form-select bg-light border-0" style="padding:0.75rem 1rem;" onchange="toggleFakulteSecimi()">
+                            <option value="Fakulte">Fakülte</option>
+                            <option value="Bolum">Bölüm</option>
+                        </select>
+                        <span asp-validation-for="Tipi" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6" id="fakulteSecimiContainer" style="@(Model.Tipi == "Bolum" ? "" : "display:none;")">
+                        <label asp-for="UstOrganizasyonId" class="form-label fw-bold text-muted">Bağlı Olduğu Fakülte</label>
+                        <select asp-for="UstOrganizasyonId" class="form-select bg-light border-0" style="padding:0.75rem 1rem;" asp-items="ViewBag.Fakulteler">
+                            <option value="">Seçiniz...</option>
+                        </select>
+                        <span asp-validation-for="UstOrganizasyonId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Adi" class="form-label fw-bold text-muted">Organizasyon Adı</label>
+                        <input asp-for="Adi" class="form-control bg-light border-0" style="padding:0.75rem 1rem;" />
+                        <span asp-validation-for="Adi" class="text-danger small"></span>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label asp-for="Kodu" class="form-label fw-bold text-muted">Kodu (Opsiyonel)</label>
+                        <input asp-for="Kodu" class="form-control bg-light border-0" style="padding:0.75rem 1rem;" />
+                        <span asp-validation-for="Kodu" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-muted">Durum</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" asp-for="Durum" style="transform: scale(1.5); margin-left: -1.5rem;" />
+                            <label class="form-check-label ms-3" asp-for="Durum">Aktif (İşaretliyse)</label>
+                        </div>
+                    </div>
+
+                    <div class="col-12 mt-5">
+                        <button type="submit" class="btn btn-primary px-5 py-2" style="border-radius:10px; font-weight:600;">
+                            Kaydet
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function toggleFakulteSecimi() {
+            var tipi = document.getElementById('Tipi').value;
+            var fakulteSecimi = document.getElementById('fakulteSecimiContainer');
+            if (tipi === 'Bolum') {
+                fakulteSecimi.style.display = 'block';
+            } else {
+                fakulteSecimi.style.display = 'none';
+                document.getElementById('UstOrganizasyonId').value = '';
+            }
+        }
+    </script>
+}

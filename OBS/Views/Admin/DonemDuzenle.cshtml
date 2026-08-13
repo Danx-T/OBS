@@ -1,0 +1,73 @@
+@model OBS.ViewModels.DonemDuzenleViewModel
+@{
+    ViewData["Title"] = "Dönem Düzenle";
+}
+
+<div class="container-fluid px-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark mb-0">✏️ Dönem Düzenle</h2>
+        <a asp-action="DonemYonetimi" class="btn btn-outline-secondary" style="border-radius:10px; font-weight:600;">
+            ← Geri Dön
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm" style="border-radius:15px; overflow:hidden;">
+        <div class="card-body p-4 p-md-5">
+            <form asp-action="DonemDuzenle" method="post">
+                <input type="hidden" asp-for="Id" />
+                
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label asp-for="AkademikYil" class="form-label fw-bold text-muted">Akademik Yıl</label>
+                        <input asp-for="AkademikYil" class="form-control bg-light border-0" style="padding:0.75rem 1rem;" placeholder="Örn: 2025-2026" />
+                        <span asp-validation-for="AkademikYil" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Donem1" class="form-label fw-bold text-muted">Dönem</label>
+                        <select asp-for="Donem1" class="form-select bg-light border-0" style="padding:0.75rem 1rem;">
+                            <option value="Guz">Güz</option>
+                            <option value="Bahar">Bahar</option>
+                            <option value="Yaz">Yaz</option>
+                        </select>
+                        <span asp-validation-for="Donem1" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="BaslangicTarihi" class="form-label fw-bold text-muted">Başlangıç Tarihi</label>
+                        <input asp-for="BaslangicTarihi" type="date" class="form-control bg-light border-0" style="padding:0.75rem 1rem;" />
+                        <span asp-validation-for="BaslangicTarihi" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="BitisTarihi" class="form-label fw-bold text-muted">Bitiş Tarihi</label>
+                        <input asp-for="BitisTarihi" type="date" class="form-control bg-light border-0" style="padding:0.75rem 1rem;" />
+                        <span asp-validation-for="BitisTarihi" class="text-danger small"></span>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label asp-for="DersKaydiBaslangic" class="form-label fw-bold text-muted">Ders Kaydı Başlangıç (Tarih & Saat)</label>
+                        <input asp-for="DersKaydiBaslangic" type="datetime-local" class="form-control bg-light border-0" style="padding:0.75rem 1rem;" />
+                        <span asp-validation-for="DersKaydiBaslangic" class="text-danger small"></span>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label asp-for="DersKaydiBitis" class="form-label fw-bold text-muted">Ders Kaydı Bitiş (Tarih & Saat)</label>
+                        <input asp-for="DersKaydiBitis" type="datetime-local" class="form-control bg-light border-0" style="padding:0.75rem 1rem;" />
+                        <span asp-validation-for="DersKaydiBitis" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12 mt-5">
+                        <button type="submit" class="btn btn-primary px-5 py-2" style="border-radius:10px; font-weight:600;">
+                            Kaydet
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

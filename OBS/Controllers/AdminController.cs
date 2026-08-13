@@ -2668,4 +2668,129 @@ public class AdminController : Controller
         TempData["Basari"] = "Yetki başarıyla güncellendi.";
         return RedirectToAction(nameof(RolYetkiYonetimi));
     }
+
+    // --- ORGANİZASYON / DÖNEM DÜZENLEME ---
+
+    [HttpGet]
+    public async Task<IActionResult> OrganizasyonDuzenle(int id)
+    {
+        var org = await _context.Organizasyons.FindAsync(id);
+        if (org == null) return NotFound();
+
+        var model = new OBS.ViewModels.OrganizasyonDuzenleViewModel
+        {
+            Id = org.Id,
+            UstOrganizasyonId = org.UstOrganizasyonId,
+            Tipi = org.Tipi,
+            Adi = org.Adi,
+            Kodu = org.Kodu,
+            Durum = org.Durum
+        };
+
+        var fakulteler = await _context.Organizasyons
+            .Where(o => o.UstOrganizasyonId == null && o.Id != id)
+            .ToListAsync();
+        ViewBag.Fakulteler = new SelectList(fakulteler, "Id", "Adi", model.UstOrganizasyonId);
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> OrganizasyonDuzenle(OBS.ViewModels.OrganizasyonDuzenleViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            var fakulteler = await _context.Organizasyons.Where(o => o.UstOrganizasyonId == null && o.Id != model.Id).ToListAsync();
+            ViewBag.Fakulteler = new SelectList(fakulteler, "Id", "Adi", model.UstOrganizasyonId);
+            return View(model);
+        }
+
+        var org = await _context.Organizasyons.FindAsync(model.Id);
+        if (org == null) return NotFound();
+
+        if (model.Tipi == "Fakulte")
+            model.UstOrganizasyonId = null;
+
+        if (!string.IsNullOrEmpty(model.Kodu))
+        {
+            var kodMevcut = await _context.Organizasyons.AnyAsync(o => o.Kodu == model.Kodu && o.Id != model.Id);
+            if (kodMevcut)
+            {
+                ModelState.AddModelError("Kodu", "Bu organizasyon kodu sistemde mevcut.");
+                var fakulteler = await _context.Organizasyons.Where(o => o.UstOrganizasyonId == null && o.Id != model.Id).ToListAsync();
+                ViewBag.Fakulteler = new SelectList(fakulteler, "Id", "Adi", model.UstOrganizasyonId);
+                return View(model);
+            }
+        }
+
+        org.UstOrganizasyonId = model.UstOrganizasyonId;
+        org.Tipi = model.Tipi;
+        org.Adi = model.Adi;
+        org.Kodu = model.Kodu;
+        org.Durum = model.Durum;
+
+        await _context.SaveChangesAsync();
+        TempData["Basari"] = "Organizasyon başarıyla güncellendi.";
+        return RedirectToAction(nameof(OrganizasyonYonetimi));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> DonemDuzenle(int id)
+    {
+        var donem = await _context.Donems.FindAsync(id);
+        if (donem == null) return NotFound();
+
+        var model = new OBS.ViewModels.DonemDuzenleViewModel
+        {
+            Id = donem.Id,
+            AkademikYil = donem.AkademikYil,
+            Donem1 = donem.Donem1,
+            BaslangicTarihi = donem.BaslangicTarihi,
+            BitisTarihi = donem.BitisTarihi,
+            DersKaydiBaslangic = donem.DersKaydiBaslangic,
+            DersKaydiBitis = donem.DersKaydiBitis
+        };
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DonemDuzenle(OBS.ViewModels.DonemDuzenleViewModel model)
+    {
+        if (!ModelState.IsValid) return View(model);
+
+        if (model.BitisTarihi <= model.BaslangicTarihi)
+        {
+            ModelState.AddModelError("BitisTarihi", "Bitiş tarihi, başlangıç tarihinden sonra olmalıdır.");
+            return View(model);
+        }
+
+        if (model.DersKaydiBitis <= model.DersKaydiBaslangic)
+        {
+            ModelState.AddModelError("DersKaydiBitis", "Ders kaydı bitiş tarihi, başlangıcından sonra olmalıdır.");
+            return View(model);
+        }
+
+        var donem = await _context.Donems.FindAsync(model.Id);
+        if (donem == null) return NotFound();
+
+        var isimMevcut = await _context.Donems.AnyAsync(d => d.AkademikYil == model.AkademikYil && d.Donem1 == model.Donem1 && d.Id != model.Id);
+        if (isimMevcut)
+        {
+            ModelState.AddModelError("Donem1", "Bu Akademik Yıl ve Dönem kombinasyonu zaten sistemde mevcut.");
+            return View(model);
+        }
+
+        donem.AkademikYil = model.AkademikYil;
+        donem.Donem1 = model.Donem1;
+        donem.BaslangicTarihi = model.BaslangicTarihi;
+        donem.BitisTarihi = model.BitisTarihi;
+        donem.DersKaydiBaslangic = model.DersKaydiBaslangic;
+        donem.DersKaydiBitis = model.DersKaydiBitis;
+
+        await _context.SaveChangesAsync();
+        TempData["Basari"] = "Dönem başarıyla güncellendi.";
+        return RedirectToAction(nameof(DonemYonetimi));
+    }
 }
