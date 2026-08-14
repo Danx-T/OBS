@@ -1,0 +1,81 @@
+@model OBS.ViewModels.SalonDuzenleViewModel
+@{
+    ViewData["Title"] = "Salon Düzenle";
+}
+
+<div class="container-fluid px-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark mb-0">✏️ @(Model.SalonTipi == "Bina" ? "Bina" : "Salon/Sınıf") Düzenle</h2>
+        <a asp-action="SalonYonetimi" class="btn btn-outline-secondary" style="border-radius:10px; font-weight:600;">
+            ← Geri Dön
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm" style="border-radius:15px; overflow:hidden;">
+        <div class="card-body p-4 p-md-5">
+            <form asp-action="SalonDuzenle" method="post">
+                <input type="hidden" asp-for="Id" />
+                
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label asp-for="SalonTipi" class="form-label fw-bold text-muted">Tipi</label>
+                        <select asp-for="SalonTipi" class="form-select bg-light border-0" style="padding:0.75rem 1rem;" onchange="toggleBinaSecimi()">
+                            <option value="Bina">Bina</option>
+                            <option value="Sinif">Sınıf</option>
+                            <option value="Amfi">Amfi</option>
+                            <option value="Laboratuvar">Laboratuvar</option>
+                            <option value="Toplanti Salonu">Toplantı Salonu</option>
+                        </select>
+                        <span asp-validation-for="SalonTipi" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6" id="binaSecimiContainer" style="@(Model.SalonTipi == "Bina" ? "display:none;" : "")">
+                        <label asp-for="BinaId" class="form-label fw-bold text-muted">Bağlı Olduğu Bina</label>
+                        <select asp-for="BinaId" class="form-select bg-light border-0" style="padding:0.75rem 1rem;" asp-items="ViewBag.Binalar">
+                            <option value="">Seçiniz...</option>
+                        </select>
+                        <span asp-validation-for="BinaId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="SalonAdi" class="form-label fw-bold text-muted">Adı</label>
+                        <input asp-for="SalonAdi" class="form-control bg-light border-0" style="padding:0.75rem 1rem;" />
+                        <span asp-validation-for="SalonAdi" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6" id="kapasiteContainer" style="@(Model.SalonTipi == "Bina" ? "display:none;" : "")">
+                        <label asp-for="Kapasite" class="form-label fw-bold text-muted">Kapasite</label>
+                        <input asp-for="Kapasite" type="number" class="form-control bg-light border-0" style="padding:0.75rem 1rem;" />
+                        <span asp-validation-for="Kapasite" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12 mt-5">
+                        <button type="submit" class="btn btn-primary px-5 py-2" style="border-radius:10px; font-weight:600;">
+                            Kaydet
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function toggleBinaSecimi() {
+            var tipi = document.getElementById('SalonTipi').value;
+            var binaSecimi = document.getElementById('binaSecimiContainer');
+            var kapasiteContainer = document.getElementById('kapasiteContainer');
+            if (tipi === 'Bina') {
+                binaSecimi.style.display = 'none';
+                kapasiteContainer.style.display = 'none';
+                document.getElementById('BinaId').value = '';
+                document.getElementById('Kapasite').value = '';
+            } else {
+                binaSecimi.style.display = 'block';
+                kapasiteContainer.style.display = 'block';
+            }
+        }
+    </script>
+}
