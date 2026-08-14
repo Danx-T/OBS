@@ -1,0 +1,79 @@
+@model OBS.ViewModels.AcilanDersDuzenleViewModel
+@{
+    ViewData["Title"] = "Şube Düzenle";
+}
+
+<div class="container-fluid px-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark mb-0">✏️ Açılan Ders (Şube) Düzenle</h2>
+        <a asp-action="AcilanDersYonetimi" class="btn btn-outline-secondary" style="border-radius:10px; font-weight:600;">
+            ← Geri Dön
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm" style="border-radius:15px; overflow:hidden;">
+        <div class="card-body p-4 p-md-5">
+            <form asp-action="AcilanDersDuzenle" method="post">
+                <input type="hidden" asp-for="Id" />
+                
+                <div class="row g-4">
+                    
+                    <div class="col-md-6">
+                        <label asp-for="DonemId" class="form-label fw-bold text-muted">Akademik Dönem</label>
+                        <select asp-for="DonemId" class="form-select bg-light border-0" style="padding:0.75rem 1rem;" asp-items="ViewBag.Donemler">
+                            <option value="">-- Dönem Seçiniz --</option>
+                        </select>
+                        <span asp-validation-for="DonemId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="DersId" class="form-label fw-bold text-muted">Ders</label>
+                        <select asp-for="DersId" class="form-select bg-light border-0" style="padding:0.75rem 1rem;" asp-items="ViewBag.Dersler">
+                            <option value="">-- Ders Seçiniz --</option>
+                        </select>
+                        <span asp-validation-for="DersId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="OgretimUyesiId" class="form-label fw-bold text-muted">Öğretim Üyesi</label>
+                        <select asp-for="OgretimUyesiId" class="form-select bg-light border-0" style="padding:0.75rem 1rem;" asp-items="ViewBag.OgretimUyeleri">
+                            <option value="">-- Öğretim Üyesi Seçiniz --</option>
+                        </select>
+                        <span asp-validation-for="OgretimUyesiId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="SubeNo" class="form-label fw-bold text-muted">Şube No</label>
+                        <input asp-for="SubeNo" class="form-control bg-light border-0" style="padding:0.75rem 1rem; text-transform: uppercase;" />
+                        <span asp-validation-for="SubeNo" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Kontenjan" class="form-label fw-bold text-muted">Kontenjan</label>
+                        <input asp-for="Kontenjan" type="number" class="form-control bg-light border-0" style="padding:0.75rem 1rem;" />
+                        <span asp-validation-for="Kontenjan" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Durum" class="form-label fw-bold text-muted">Durum</label>
+                        <select asp-for="Durum" class="form-select bg-light border-0" style="padding:0.75rem 1rem;">
+                            <option value="Aktif">Aktif</option>
+                            <option value="Pasif">Pasif</option>
+                        </select>
+                        <span asp-validation-for="Durum" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12 mt-5">
+                        <button type="submit" class="btn btn-primary px-5 py-2" style="border-radius:10px; font-weight:600;">
+                            Kaydet
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
