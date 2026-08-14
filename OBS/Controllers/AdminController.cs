@@ -2936,4 +2936,66 @@ public class AdminController : Controller
         TempData["Basari"] = "Açılan ders (şube) başarıyla güncellendi.";
         return RedirectToAction(nameof(AcilanDersYonetimi));
     }
+
+    // --- SALON / BİNA DÜZENLEME ---
+
+    [HttpGet]
+    public async Task<IActionResult> SalonDuzenle(int id)
+    {
+        var salon = await _context.Salons.FindAsync(id);
+        if (salon == null) return NotFound();
+
+        var model = new OBS.ViewModels.SalonDuzenleViewModel
+        {
+            Id = salon.Id,
+            BinaId = salon.BinaId,
+            SalonTipi = salon.SalonTipi,
+            SalonAdi = salon.SalonAdi,
+            Kapasite = salon.Kapasite
+        };
+
+        var binalar = await _context.Salons.Where(s => s.SalonTipi == "Bina" && s.Id != id).ToListAsync();
+        ViewBag.Binalar = new SelectList(binalar, "Id", "SalonAdi", model.BinaId);
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SalonDuzenle(OBS.ViewModels.SalonDuzenleViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            var binalar = await _context.Salons.Where(s => s.SalonTipi == "Bina" && s.Id != model.Id).ToListAsync();
+            ViewBag.Binalar = new SelectList(binalar, "Id", "SalonAdi", model.BinaId);
+            return View(model);
+        }
+
+        var salon = await _context.Salons.FindAsync(model.Id);
+        if (salon == null) return NotFound();
+
+        bool exists = await _context.Salons.AnyAsync(s => s.BinaId == model.BinaId && s.SalonAdi == model.SalonAdi && s.Id != model.Id);
+        if (exists)
+        {
+            ModelState.AddModelError("SalonAdi", "Bu binada aynı isimde bir salon/bina zaten mevcut.");
+            var binalar = await _context.Salons.Where(s => s.SalonTipi == "Bina" && s.Id != model.Id).ToListAsync();
+            ViewBag.Binalar = new SelectList(binalar, "Id", "SalonAdi", model.BinaId);
+            return View(model);
+        }
+
+        salon.BinaId = model.BinaId;
+        salon.SalonTipi = model.SalonTipi;
+        salon.SalonAdi = model.SalonAdi;
+        salon.Kapasite = model.Kapasite;
+
+        if (salon.SalonTipi == "Bina")
+        {
+            salon.BinaId = null;
+            salon.Kapasite = null;
+        }
+
+        await _context.SaveChangesAsync();
+        TempData["Basari"] = "Kayıt başarıyla güncellendi.";
+        return RedirectToAction(nameof(SalonYonetimi));
+    }
 }

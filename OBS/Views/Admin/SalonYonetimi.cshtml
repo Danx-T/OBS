@@ -331,15 +331,20 @@
                                         <span class="text-muted">—</span>
                                     </td>
                                     <td class="text-end">
-                                        <form asp-action="SalonSil" asp-controller="Admin" method="post" class="m-0"
-                                              onsubmit="event.stopPropagation(); return confirm('@(bina.SalonAdi) binasını silmek istediğinize emin misiniz?');">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@bina.Id" />
-                                            <input type="hidden" name="geriDonBinaId" value="@seciliBinaId" />
-                                            <button type="submit" class="btn-action btn-danger-soft" title="Sil" onclick="event.stopPropagation();">
-                                                🗑️
+                                        <div class="d-inline-flex gap-1 justify-content-end">
+                                            <button type="button" class="btn-action text-decoration-none" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;" title="Düzenle" onclick="event.stopPropagation(); window.location.href='@Url.Action("SalonDuzenle", "Admin", new { id = bina.Id })';">
+                                                ✏️
                                             </button>
-                                        </form>
+                                            <form asp-action="SalonSil" asp-controller="Admin" method="post" class="m-0"
+                                                  onsubmit="event.stopPropagation(); return confirm('@(bina.SalonAdi) binasını silmek istediğinize emin misiniz?');">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@bina.Id" />
+                                                <input type="hidden" name="geriDonBinaId" value="@seciliBinaId" />
+                                                <button type="submit" class="btn-action btn-danger-soft" title="Sil" onclick="event.stopPropagation();">
+                                                    🗑️
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
@@ -385,15 +390,20 @@
                                                 }
                                             </td>
                                             <td class="text-end">
-                                                <form asp-action="SalonSil" asp-controller="Admin" method="post" class="m-0"
-                                                      onsubmit="return confirm('@(s.SalonAdi) salonunu silmek istediğinize emin misiniz?');">
-                                                    @Html.AntiForgeryToken()
-                                                    <input type="hidden" name="id" value="@s.Id" />
-                                                    <input type="hidden" name="geriDonBinaId" value="@seciliBinaId" />
-                                                    <button type="submit" class="btn-action btn-danger-soft" title="Sil">
-                                                        🗑️
-                                                    </button>
-                                                </form>
+                                                <div class="d-inline-flex gap-1 justify-content-end">
+                                                    <a asp-action="SalonDuzenle" asp-route-id="@s.Id" class="btn-action text-decoration-none" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;" title="Düzenle">
+                                                        ✏️
+                                                    </a>
+                                                    <form asp-action="SalonSil" asp-controller="Admin" method="post" class="m-0"
+                                                          onsubmit="return confirm('@(s.SalonAdi) salonunu silmek istediğinize emin misiniz?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@s.Id" />
+                                                        <input type="hidden" name="geriDonBinaId" value="@seciliBinaId" />
+                                                        <button type="submit" class="btn-action btn-danger-soft" title="Sil">
+                                                            🗑️
+                                                        </button>
+                                                    </form>
+                                                </div>
                                             </td>
                                         </tr>
                                     }
