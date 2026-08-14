@@ -1,0 +1,72 @@
+@model OBS.ViewModels.SinavProgramiDuzenleViewModel
+@{
+    ViewData["Title"] = "Sınav Programı Düzenle";
+}
+
+<div class="container-fluid px-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark mb-0">✏️ Sınav Programı Düzenle</h2>
+        <a asp-action="SinavProgramiYonetimi" class="btn btn-outline-secondary" style="border-radius:10px; font-weight:600;">
+            ← Geri Dön
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm" style="border-radius:15px; overflow:hidden;">
+        <div class="card-body p-4 p-md-5">
+            <form asp-action="SinavProgramiDuzenle" method="post">
+                <input type="hidden" asp-for="Id" />
+                
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label asp-for="AcilanDersId" class="form-label fw-bold text-muted">Açılan Ders</label>
+                        <select asp-for="AcilanDersId" class="form-select bg-light border-0" style="padding:0.75rem 1rem;" asp-items="ViewBag.AcilanDersler">
+                            <option value="">-- Ders Seçiniz --</option>
+                        </select>
+                        <span asp-validation-for="AcilanDersId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="SalonId" class="form-label fw-bold text-muted">Sınıf / Derslik</label>
+                        <select asp-for="SalonId" class="form-select bg-light border-0" style="padding:0.75rem 1rem;" asp-items="ViewBag.Salonlar">
+                            <option value="">-- Sınıf Seçiniz --</option>
+                        </select>
+                        <span asp-validation-for="SalonId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="SinavTipi" class="form-label fw-bold text-muted">Sınav Tipi</label>
+                        <select asp-for="SinavTipi" class="form-select bg-light border-0" style="padding:0.75rem 1rem;">
+                            <option value="Vize">Vize</option>
+                            <option value="Final">Final</option>
+                            <option value="Butunleme">Bütünleme</option>
+                            <option value="Mazeret">Mazeret</option>
+                        </select>
+                        <span asp-validation-for="SinavTipi" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Baslangic" class="form-label fw-bold text-muted">Başlangıç Zamanı</label>
+                        <input asp-for="Baslangic" class="form-control bg-light border-0" style="padding:0.75rem 1rem;" />
+                        <span asp-validation-for="Baslangic" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Bitis" class="form-label fw-bold text-muted">Bitiş Zamanı</label>
+                        <input asp-for="Bitis" class="form-control bg-light border-0" style="padding:0.75rem 1rem;" />
+                        <span asp-validation-for="Bitis" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12 mt-5">
+                        <button type="submit" class="btn btn-primary px-5 py-2" style="border-radius:10px; font-weight:600;">
+                            Kaydet
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

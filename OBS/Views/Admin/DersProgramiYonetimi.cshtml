@@ -273,14 +273,19 @@
                                 <div class="room-badge" title="@dp.Salon.Bina.SalonAdi">
                                     🚪 @dp.Salon.SalonAdi
                                 </div>
-                                <form asp-action="DersProgramiSil" asp-controller="Admin" method="post" class="m-0"
-                                      onsubmit="return confirm('Bu ders programı kaydını silmek istediğinize emin misiniz?');">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@dp.Id" />
-                                    <input type="hidden" name="donemId" value="@seciliDonemId" />
-                                    <input type="hidden" name="bolumId" value="@seciliBolumId" />
-                                    <button type="submit" class="btn-action" title="Sil">🗑️</button>
-                                </form>
+                                <div class="d-inline-flex gap-1 justify-content-end">
+                                    <a asp-action="DersProgramiDuzenle" asp-route-id="@dp.Id" class="btn-action text-decoration-none" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;" title="Düzenle">
+                                        ✏️
+                                    </a>
+                                    <form asp-action="DersProgramiSil" asp-controller="Admin" method="post" class="m-0"
+                                          onsubmit="return confirm('Bu ders programı kaydını silmek istediğinize emin misiniz?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@dp.Id" />
+                                        <input type="hidden" name="donemId" value="@seciliDonemId" />
+                                        <input type="hidden" name="bolumId" value="@seciliBolumId" />
+                                        <button type="submit" class="btn-action" title="Sil">🗑️</button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     }
