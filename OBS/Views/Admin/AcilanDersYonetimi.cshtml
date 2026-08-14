@@ -445,6 +445,9 @@
                                             </td>
                                             <td class="text-end">
                                                 <div class="d-inline-flex gap-1">
+                                                    <a asp-action="AcilanDersDuzenle" asp-route-id="@a.Id" class="btn-action" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;" title="Şubeyi Düzenle">
+                                                        ✏️
+                                                    </a>
                                                     <form asp-action="AcilanDersDurumDegistir" asp-controller="Admin" method="post" class="m-0">
                                                         @Html.AntiForgeryToken()
                                                         <input type="hidden" name="id" value="@a.Id" />

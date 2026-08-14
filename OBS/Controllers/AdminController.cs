@@ -2859,4 +2859,81 @@ public class AdminController : Controller
         TempData["Basari"] = "Ders bilgileri başarıyla güncellendi.";
         return RedirectToAction(nameof(DersYonetimi));
     }
+
+    // --- AÇILAN DERS DÜZENLEME ---
+
+    [HttpGet]
+    public async Task<IActionResult> AcilanDersDuzenle(int id)
+    {
+        var ad = await _context.AcilanDers.FindAsync(id);
+        if (ad == null) return NotFound();
+
+        var model = new OBS.ViewModels.AcilanDersDuzenleViewModel
+        {
+            Id = ad.Id,
+            DersId = ad.DersId,
+            OgretimUyesiId = ad.OgretimUyesiId,
+            DonemId = ad.DonemId,
+            SubeNo = ad.SubeNo,
+            Kontenjan = ad.Kontenjan,
+            Durum = ad.Durum
+        };
+
+        ViewBag.Dersler = new SelectList(await _context.Ders.OrderBy(d => d.DersKodu).Select(d => new { d.Id, DersAdi = d.DersKodu + " - " + d.DersAdi }).ToListAsync(), "Id", "DersAdi", model.DersId);
+        ViewBag.OgretimUyeleri = new SelectList(await _context.OgretimUyesis.Include(o => o.Kullanici).Select(o => new {
+            o.Id, AdSoyad = o.Unvan + " " + o.Kullanici.Ad + " " + o.Kullanici.Soyad
+        }).ToListAsync(), "Id", "AdSoyad", model.OgretimUyesiId);
+        ViewBag.Donemler = new SelectList(await _context.Donems.OrderByDescending(d => d.BaslangicTarihi).Select(d => new {
+            d.Id, Adi = d.AkademikYil + " " + (d.Donem1 == "Guz" ? "Güz" : d.Donem1)
+        }).ToListAsync(), "Id", "Adi", model.DonemId);
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AcilanDersDuzenle(OBS.ViewModels.AcilanDersDuzenleViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            ViewBag.Dersler = new SelectList(await _context.Ders.OrderBy(d => d.DersKodu).Select(d => new { d.Id, DersAdi = d.DersKodu + " - " + d.DersAdi }).ToListAsync(), "Id", "DersAdi", model.DersId);
+            ViewBag.OgretimUyeleri = new SelectList(await _context.OgretimUyesis.Include(o => o.Kullanici).Select(o => new {
+                o.Id, AdSoyad = o.Unvan + " " + o.Kullanici.Ad + " " + o.Kullanici.Soyad
+            }).ToListAsync(), "Id", "AdSoyad", model.OgretimUyesiId);
+            ViewBag.Donemler = new SelectList(await _context.Donems.OrderByDescending(d => d.BaslangicTarihi).Select(d => new {
+                d.Id, Adi = d.AkademikYil + " " + (d.Donem1 == "Guz" ? "Güz" : d.Donem1)
+            }).ToListAsync(), "Id", "Adi", model.DonemId);
+            return View(model);
+        }
+
+        var ad = await _context.AcilanDers.FindAsync(model.Id);
+        if (ad == null) return NotFound();
+
+        var subeNo = model.SubeNo.Trim().ToUpper();
+
+        var kodMevcut = await _context.AcilanDers.AnyAsync(a => a.DersId == model.DersId && a.DonemId == model.DonemId && a.SubeNo == subeNo && a.Id != model.Id);
+        if (kodMevcut)
+        {
+            ModelState.AddModelError("SubeNo", "Bu dersin bu dönemde aynı isimli bir şubesi zaten mevcut.");
+            ViewBag.Dersler = new SelectList(await _context.Ders.OrderBy(d => d.DersKodu).Select(d => new { d.Id, DersAdi = d.DersKodu + " - " + d.DersAdi }).ToListAsync(), "Id", "DersAdi", model.DersId);
+            ViewBag.OgretimUyeleri = new SelectList(await _context.OgretimUyesis.Include(o => o.Kullanici).Select(o => new {
+                o.Id, AdSoyad = o.Unvan + " " + o.Kullanici.Ad + " " + o.Kullanici.Soyad
+            }).ToListAsync(), "Id", "AdSoyad", model.OgretimUyesiId);
+            ViewBag.Donemler = new SelectList(await _context.Donems.OrderByDescending(d => d.BaslangicTarihi).Select(d => new {
+                d.Id, Adi = d.AkademikYil + " " + (d.Donem1 == "Guz" ? "Güz" : d.Donem1)
+            }).ToListAsync(), "Id", "Adi", model.DonemId);
+            return View(model);
+        }
+
+        ad.DersId = model.DersId;
+        ad.OgretimUyesiId = model.OgretimUyesiId;
+        ad.DonemId = model.DonemId;
+        ad.SubeNo = subeNo;
+        ad.Kontenjan = model.Kontenjan;
+        ad.Durum = string.IsNullOrWhiteSpace(model.Durum) ? "Aktif" : model.Durum;
+
+        await _context.SaveChangesAsync();
+        TempData["Basari"] = "Açılan ders (şube) başarıyla güncellendi.";
+        return RedirectToAction(nameof(AcilanDersYonetimi));
+    }
 }
