@@ -2998,4 +2998,317 @@ public class AdminController : Controller
         TempData["Basari"] = "Kayıt başarıyla güncellendi.";
         return RedirectToAction(nameof(SalonYonetimi));
     }
+
+    // --- DERS PROGRAMI DÜZENLEME ---
+
+    [HttpGet]
+    public async Task<IActionResult> DersProgramiDuzenle(int id)
+    {
+        var dp = await _context.DersProgramis
+            .Include(d => d.AcilanDers)
+            .ThenInclude(a => a.Ders)
+            .FirstOrDefaultAsync(d => d.Id == id);
+            
+        if (dp == null) return NotFound();
+
+        var model = new OBS.ViewModels.DersProgramiDuzenleViewModel
+        {
+            Id = dp.Id,
+            AcilanDersId = dp.AcilanDersId,
+            SalonId = dp.SalonId,
+            Gun = dp.Gun,
+            BaslangicSaati = dp.BaslangicSaati,
+            BitisSaati = dp.BitisSaati
+        };
+
+        var bolumId = dp.AcilanDers.Ders.OrganizasyonId;
+        var donemId = dp.AcilanDers.DonemId;
+
+        var acilanDersler = await _context.AcilanDers
+            .Include(a => a.Ders)
+            .Include(a => a.OgretimUyesi)
+            .ThenInclude(o => o.Kullanici)
+            .Where(a => a.DonemId == donemId && a.Ders.OrganizasyonId == bolumId)
+            .ToListAsync();
+
+        ViewBag.AcilanDersler = new SelectList(acilanDersler.Select(a => new {
+            a.Id, Ad = a.Ders.DersKodu + " (Şb: " + a.SubeNo + ") - " + a.OgretimUyesi.Kullanici.Ad + " " + a.OgretimUyesi.Kullanici.Soyad
+        }), "Id", "Ad", model.AcilanDersId);
+
+        var salonlar = await _context.Salons
+            .Include(s => s.Bina)
+            .Where(s => s.SalonTipi != "Bina")
+            .OrderBy(s => s.Bina!.SalonAdi).ThenBy(s => s.SalonAdi)
+            .ToListAsync();
+
+        ViewBag.Salonlar = new SelectList(salonlar.Select(s => new {
+            s.Id, Ad = (s.Bina?.SalonAdi ?? "") + " - " + s.SalonAdi + " (" + s.Kapasite + " Kişi)"
+        }), "Id", "Ad", model.SalonId);
+
+        ViewBag.Gunler = new SelectList(new Dictionary<string, string> {
+            {"Pazartesi", "Pazartesi"},
+            {"Sali", "Salı"},
+            {"Carsamba", "Çarşamba"},
+            {"Persembe", "Perşembe"},
+            {"Cuma", "Cuma"},
+            {"Cumartesi", "Cumartesi"},
+            {"Pazar", "Pazar"}
+        }, "Key", "Value", model.Gun);
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DersProgramiDuzenle(OBS.ViewModels.DersProgramiDuzenleViewModel model)
+    {
+        var dp = await _context.DersProgramis
+            .Include(d => d.AcilanDers)
+            .ThenInclude(a => a.Ders)
+            .FirstOrDefaultAsync(d => d.Id == model.Id);
+
+        if (dp == null) return NotFound();
+
+        if (model.BitisSaati <= model.BaslangicSaati)
+        {
+            ModelState.AddModelError("BitisSaati", "Bitiş saati başlangıç saatinden sonra olmalıdır.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            var bolumId = dp.AcilanDers.Ders.OrganizasyonId;
+            var donemId = dp.AcilanDers.DonemId;
+
+            var acilanDersler = await _context.AcilanDers
+                .Include(a => a.Ders)
+                .Include(a => a.OgretimUyesi)
+                .ThenInclude(o => o.Kullanici)
+                .Where(a => a.DonemId == donemId && a.Ders.OrganizasyonId == bolumId)
+                .ToListAsync();
+
+            ViewBag.AcilanDersler = new SelectList(acilanDersler.Select(a => new {
+                a.Id, Ad = a.Ders.DersKodu + " (Şb: " + a.SubeNo + ") - " + a.OgretimUyesi.Kullanici.Ad + " " + a.OgretimUyesi.Kullanici.Soyad
+            }), "Id", "Ad", model.AcilanDersId);
+
+            var salonlar = await _context.Salons
+                .Include(s => s.Bina)
+                .Where(s => s.SalonTipi != "Bina")
+                .OrderBy(s => s.Bina!.SalonAdi).ThenBy(s => s.SalonAdi)
+                .ToListAsync();
+
+            ViewBag.Salonlar = new SelectList(salonlar.Select(s => new {
+                s.Id, Ad = (s.Bina?.SalonAdi ?? "") + " - " + s.SalonAdi + " (" + s.Kapasite + " Kişi)"
+            }), "Id", "Ad", model.SalonId);
+
+            ViewBag.Gunler = new SelectList(new Dictionary<string, string> {
+                {"Pazartesi", "Pazartesi"},
+                {"Sali", "Salı"},
+                {"Carsamba", "Çarşamba"},
+                {"Persembe", "Perşembe"},
+                {"Cuma", "Cuma"},
+                {"Cumartesi", "Cumartesi"},
+                {"Pazar", "Pazar"}
+            }, "Key", "Value", model.Gun);
+
+            return View(model);
+        }
+
+        bool cakisiyor = await _context.DersProgramis.AnyAsync(d => 
+            d.SalonId == model.SalonId && 
+            d.Gun == model.Gun && 
+            d.Id != model.Id &&
+            !(model.BitisSaati <= d.BaslangicSaati || model.BaslangicSaati >= d.BitisSaati));
+
+        if (cakisiyor)
+        {
+            ModelState.AddModelError("BaslangicSaati", "Bu salonda belirtilen gün ve saatler arasında başka bir ders bulunmaktadır.");
+            
+            var bolumId = dp.AcilanDers.Ders.OrganizasyonId;
+            var donemId = dp.AcilanDers.DonemId;
+
+            var acilanDersler = await _context.AcilanDers
+                .Include(a => a.Ders)
+                .Include(a => a.OgretimUyesi)
+                .ThenInclude(o => o.Kullanici)
+                .Where(a => a.DonemId == donemId && a.Ders.OrganizasyonId == bolumId)
+                .ToListAsync();
+
+            ViewBag.AcilanDersler = new SelectList(acilanDersler.Select(a => new {
+                a.Id, Ad = a.Ders.DersKodu + " (Şb: " + a.SubeNo + ") - " + a.OgretimUyesi.Kullanici.Ad + " " + a.OgretimUyesi.Kullanici.Soyad
+            }), "Id", "Ad", model.AcilanDersId);
+
+            var salonlar = await _context.Salons
+                .Include(s => s.Bina)
+                .Where(s => s.SalonTipi != "Bina")
+                .OrderBy(s => s.Bina!.SalonAdi).ThenBy(s => s.SalonAdi)
+                .ToListAsync();
+
+            ViewBag.Salonlar = new SelectList(salonlar.Select(s => new {
+                s.Id, Ad = (s.Bina?.SalonAdi ?? "") + " - " + s.SalonAdi + " (" + s.Kapasite + " Kişi)"
+            }), "Id", "Ad", model.SalonId);
+
+            ViewBag.Gunler = new SelectList(new Dictionary<string, string> {
+                {"Pazartesi", "Pazartesi"},
+                {"Sali", "Salı"},
+                {"Carsamba", "Çarşamba"},
+                {"Persembe", "Perşembe"},
+                {"Cuma", "Cuma"},
+                {"Cumartesi", "Cumartesi"},
+                {"Pazar", "Pazar"}
+            }, "Key", "Value", model.Gun);
+
+            return View(model);
+        }
+
+        dp.AcilanDersId = model.AcilanDersId;
+        dp.SalonId = model.SalonId;
+        dp.Gun = model.Gun;
+        dp.BaslangicSaati = model.BaslangicSaati;
+        dp.BitisSaati = model.BitisSaati;
+
+        await _context.SaveChangesAsync();
+        TempData["Basari"] = "Ders programı başarıyla güncellendi.";
+        return RedirectToAction(nameof(DersProgramiYonetimi));
+    }
+
+    // --- SINAV PROGRAMI DÜZENLEME ---
+
+    [HttpGet]
+    public async Task<IActionResult> SinavProgramiDuzenle(int id)
+    {
+        var sp = await _context.SinavProgramis
+            .Include(s => s.AcilanDers)
+            .ThenInclude(a => a.Ders)
+            .FirstOrDefaultAsync(s => s.Id == id);
+            
+        if (sp == null) return NotFound();
+
+        var model = new OBS.ViewModels.SinavProgramiDuzenleViewModel
+        {
+            Id = sp.Id,
+            AcilanDersId = sp.AcilanDersId,
+            SalonId = sp.SalonId,
+            SinavTipi = sp.SinavTipi,
+            Baslangic = sp.Baslangic,
+            Bitis = sp.Bitis
+        };
+
+        var bolumId = sp.AcilanDers.Ders.OrganizasyonId;
+        var donemId = sp.AcilanDers.DonemId;
+
+        var acilanDersler = await _context.AcilanDers
+            .Include(a => a.Ders)
+            .Include(a => a.OgretimUyesi)
+            .ThenInclude(o => o.Kullanici)
+            .Where(a => a.DonemId == donemId && a.Ders.OrganizasyonId == bolumId)
+            .ToListAsync();
+
+        ViewBag.AcilanDersler = new SelectList(acilanDersler.Select(a => new {
+            a.Id, Ad = a.Ders.DersKodu + " (Şb: " + a.SubeNo + ") - " + a.OgretimUyesi.Kullanici.Ad + " " + a.OgretimUyesi.Kullanici.Soyad
+        }), "Id", "Ad", model.AcilanDersId);
+
+        var salonlar = await _context.Salons
+            .Include(s => s.Bina)
+            .Where(s => s.SalonTipi != "Bina")
+            .OrderBy(s => s.Bina!.SalonAdi).ThenBy(s => s.SalonAdi)
+            .ToListAsync();
+
+        ViewBag.Salonlar = new SelectList(salonlar.Select(s => new {
+            s.Id, Ad = (s.Bina?.SalonAdi ?? "") + " - " + s.SalonAdi + " (" + s.Kapasite + " Kişi)"
+        }), "Id", "Ad", model.SalonId);
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SinavProgramiDuzenle(OBS.ViewModels.SinavProgramiDuzenleViewModel model)
+    {
+        var sp = await _context.SinavProgramis
+            .Include(s => s.AcilanDers)
+            .ThenInclude(a => a.Ders)
+            .FirstOrDefaultAsync(s => s.Id == model.Id);
+
+        if (sp == null) return NotFound();
+
+        if (model.Bitis <= model.Baslangic)
+        {
+            ModelState.AddModelError("Bitis", "Bitiş tarihi ve saati başlangıçtan sonra olmalıdır.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            var bolumId = sp.AcilanDers.Ders.OrganizasyonId;
+            var donemId = sp.AcilanDers.DonemId;
+
+            var acilanDersler = await _context.AcilanDers
+                .Include(a => a.Ders)
+                .Include(a => a.OgretimUyesi)
+                .ThenInclude(o => o.Kullanici)
+                .Where(a => a.DonemId == donemId && a.Ders.OrganizasyonId == bolumId)
+                .ToListAsync();
+
+            ViewBag.AcilanDersler = new SelectList(acilanDersler.Select(a => new {
+                a.Id, Ad = a.Ders.DersKodu + " (Şb: " + a.SubeNo + ") - " + a.OgretimUyesi.Kullanici.Ad + " " + a.OgretimUyesi.Kullanici.Soyad
+            }), "Id", "Ad", model.AcilanDersId);
+
+            var salonlar = await _context.Salons
+                .Include(s => s.Bina)
+                .Where(s => s.SalonTipi != "Bina")
+                .OrderBy(s => s.Bina!.SalonAdi).ThenBy(s => s.SalonAdi)
+                .ToListAsync();
+
+            ViewBag.Salonlar = new SelectList(salonlar.Select(s => new {
+                s.Id, Ad = (s.Bina?.SalonAdi ?? "") + " - " + s.SalonAdi + " (" + s.Kapasite + " Kişi)"
+            }), "Id", "Ad", model.SalonId);
+
+            return View(model);
+        }
+
+        bool cakisiyor = await _context.SinavProgramis.AnyAsync(s => 
+            s.SalonId == model.SalonId && 
+            s.Id != model.Id &&
+            !(model.Bitis <= s.Baslangic || model.Baslangic >= s.Bitis));
+
+        if (cakisiyor)
+        {
+            ModelState.AddModelError("Baslangic", "Bu salonda belirtilen tarih ve saatler arasında başka bir sınav bulunmaktadır.");
+            
+            var bolumId = sp.AcilanDers.Ders.OrganizasyonId;
+            var donemId = sp.AcilanDers.DonemId;
+
+            var acilanDersler = await _context.AcilanDers
+                .Include(a => a.Ders)
+                .Include(a => a.OgretimUyesi)
+                .ThenInclude(o => o.Kullanici)
+                .Where(a => a.DonemId == donemId && a.Ders.OrganizasyonId == bolumId)
+                .ToListAsync();
+
+            ViewBag.AcilanDersler = new SelectList(acilanDersler.Select(a => new {
+                a.Id, Ad = a.Ders.DersKodu + " (Şb: " + a.SubeNo + ") - " + a.OgretimUyesi.Kullanici.Ad + " " + a.OgretimUyesi.Kullanici.Soyad
+            }), "Id", "Ad", model.AcilanDersId);
+
+            var salonlar = await _context.Salons
+                .Include(s => s.Bina)
+                .Where(s => s.SalonTipi != "Bina")
+                .OrderBy(s => s.Bina!.SalonAdi).ThenBy(s => s.SalonAdi)
+                .ToListAsync();
+
+            ViewBag.Salonlar = new SelectList(salonlar.Select(s => new {
+                s.Id, Ad = (s.Bina?.SalonAdi ?? "") + " - " + s.SalonAdi + " (" + s.Kapasite + " Kişi)"
+            }), "Id", "Ad", model.SalonId);
+
+            return View(model);
+        }
+
+        sp.AcilanDersId = model.AcilanDersId;
+        sp.SalonId = model.SalonId;
+        sp.SinavTipi = model.SinavTipi;
+        sp.Baslangic = model.Baslangic;
+        sp.Bitis = model.Bitis;
+
+        await _context.SaveChangesAsync();
+        TempData["Basari"] = "Sınav programı başarıyla güncellendi.";
+        return RedirectToAction(nameof(SinavProgramiYonetimi));
+    }
 }
