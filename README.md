@@ -123,7 +123,7 @@ Veritabanı zaten kuruluysa hiçbir şey yapmadan çıkar, mevcut verinize dokun
 }
 ```
 
-Sunucunuz farklıysa (ör. `localhost\\SQLEXPRESS` veya `(localdb)\\MSSQLLocalDB`) `Server=` kısmını değiştirin.
+Sunucunuz farklıysa (ör. `localhost\SQLEXPRESS` veya `(localdb)\MSSQLLocalDB`) `Server=` kısmını değiştirin.
 
 ### 4️⃣ Uygulamayı çalıştırın
 
@@ -132,10 +132,11 @@ cd OBS
 dotnet run
 ```
 
-Tarayıcıda şu adreslerden birini açın:
+`dotnet run` varsayılan olarak `http` profilini kullanır ve tarayıcıyı otomatik açar. Elle açmak isterseniz adres:
 
-- `https://localhost:7153`
-- `http://localhost:5028`
+**http://localhost:5028**
+
+> HTTPS ile çalıştırmak isterseniz `dotnet run --launch-profile https` komutunu kullanın, adres `https://localhost:7153` olur.
 
 ### 5️⃣ Giriş yapın
 
@@ -231,21 +232,3 @@ yönetici hesabı, bir fakülte ve bölüm, 2025-2026 Güz/Bahar dönemleri ve �
 - Yönetim paneli `[Authorize(Roles = "Admin")]` ile korunur
 - Tüm veri değişiklikleri denetim kaydına alınır
 - Gizli ayarlar (`appsettings.Development.json`) Git'e dahil edilmez
-
----
-
-## 🗺️ Yol Haritası
-
-- [ ] Yönetim panelinin mantıksal olarak daha küçük controller ve servislere bölünmesi
-- [ ] Birim ve entegrasyon testleri
-- [ ] EF Core Migration desteği
-
----
-
-<div align="center">
-
-**Geliştirici:** [Danx-T](https://github.com/Danx-T)
-
-⭐ Projeyi beğendiyseniz bir yıldız bırakmayı unutmayın!
-
-</div>
