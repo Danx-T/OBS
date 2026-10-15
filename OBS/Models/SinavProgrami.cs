@@ -17,7 +17,7 @@ public partial class SinavProgrami
 
     public DateTime Bitis { get; set; }
 
-    public virtual AcilanDer AcilanDers { get; set; } = null!;
+    public virtual AcilanDers AcilanDers { get; set; } = null!;
 
     public virtual Salon Salon { get; set; } = null!;
 }

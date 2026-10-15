@@ -1,4 +1,4 @@
-using OBS.Models;
+﻿using OBS.Models;
 
 namespace OBS.ViewModels.Academician
 {
@@ -7,14 +7,14 @@ namespace OBS.ViewModels.Academician
         public OgretimUyesi OgretimUyesi { get; set; } = null!;
         public Donem? AktifDonem { get; set; }
         public List<SinavProgrami> GirisYapilabilirSinavlar { get; set; } = new List<SinavProgrami>();
-        public List<AcilanDer> VerilenDersler { get; set; } = new List<AcilanDer>();
+        public List<AcilanDers> VerilenDersler { get; set; } = new List<AcilanDers>();
     }
 
     public class AcademicianGradeEntryDetailViewModel
     {
         public OgretimUyesi OgretimUyesi { get; set; } = null!;
         public SinavProgrami? Sinav { get; set; }
-        public AcilanDer? AcilanDers { get; set; }
+        public AcilanDers? AcilanDers { get; set; }
         public string OlcmeTuru { get; set; } = "";
         public List<OgrenciNotDTO> OgrenciNotlari { get; set; } = new List<OgrenciNotDTO>();
     }

@@ -1,4 +1,4 @@
-@model List<OBS.Models.SinavProgrami>
+﻿@model List<OBS.Models.SinavProgrami>
 @{
     ViewData["Title"] = "Sınav Programı Yönetimi";
     var donemler = ViewBag.Donemler as List<OBS.Models.Donem> ?? new List<OBS.Models.Donem>();
@@ -8,7 +8,7 @@
     int seciliFakulteId = ViewBag.SeciliFakulteId;
     int seciliBolumId = ViewBag.SeciliBolumId;
     
-    var acilanDersler = ViewBag.AcilanDersler as List<OBS.Models.AcilanDer> ?? new List<OBS.Models.AcilanDer>();
+    var acilanDersler = ViewBag.AcilanDersler as List<OBS.Models.AcilanDers> ?? new List<OBS.Models.AcilanDers>();
     var salonlar = ViewBag.Salonlar as List<OBS.Models.Salon> ?? new List<OBS.Models.Salon>();
 }
 

@@ -1,4 +1,4 @@
-using OBS.Models;
+﻿using OBS.Models;
 
 namespace OBS.ViewModels.Student
 {
@@ -8,10 +8,10 @@ namespace OBS.ViewModels.Student
         public Donem? AktifDonem { get; set; }
         
         // Bu dönem açılan dersler
-        public List<AcilanDer> AcilanDersler { get; set; } = new List<AcilanDer>();
+        public List<AcilanDers> AcilanDersler { get; set; } = new List<AcilanDers>();
         
         // Cache'te tutulan, öğrencinin eklediği dersler
-        public List<AcilanDer> SecilenDersler { get; set; } = new List<AcilanDer>();
+        public List<AcilanDers> SecilenDersler { get; set; } = new List<AcilanDers>();
         
         // Veritabanında kesinleşmiş (Onay Bekliyor, Onaylandı, vs.) kayıtlar
         public List<DersKaydi> MevcutKayitlar { get; set; } = new List<DersKaydi>();

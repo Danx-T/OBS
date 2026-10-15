@@ -1504,7 +1504,7 @@ public class AdminController : Controller
             return RedirectToAction(nameof(DersYonetimi), new { fakulteId = geriDonFakulteId, bolumId = geriDonBolumId });
         }
 
-        var der = new Der
+        var der = new Ders
         {
             OrganizasyonId = organizasyonId,
             DersKodu = dersKodu,
@@ -1581,7 +1581,7 @@ public class AdminController : Controller
         var der = await _context.Ders
             .Include(d => d.AcilanDers)
             .Include(d => d.OnKosulDers)
-            .Include(d => d.Ders)
+            .Include(d => d.OnKosulOlduguDersler)
             .FirstOrDefaultAsync(d => d.Id == id);
 
         if (der == null)
@@ -1596,9 +1596,9 @@ public class AdminController : Controller
             return RedirectToAction(nameof(DersYonetimi), new { fakulteId = geriDonFakulteId, bolumId = geriDonBolumId });
         }
 
-        if (der.Ders.Any())
+        if (der.OnKosulOlduguDersler.Any())
         {
-            var bagliKodlar = string.Join(", ", der.Ders.Select(x => x.DersKodu));
+            var bagliKodlar = string.Join(", ", der.OnKosulOlduguDersler.Select(x => x.DersKodu));
             TempData["Hata"] = $"'{der.DersKodu}' dersi başka derslerin ({bagliKodlar}) ön koşulu olduğu için silinemez. Önce ilgili derslerin ön koşul bağını kaldırınız.";
             return RedirectToAction(nameof(DersYonetimi), new { fakulteId = geriDonFakulteId, bolumId = geriDonBolumId });
         }
@@ -1632,7 +1632,7 @@ public class AdminController : Controller
     }
 
     // =========================================================================
-    // AÇILAN DERS YÖNETİMİ (AcilanDer)
+    // AÇILAN DERS YÖNETİMİ (AcilanDers)
     // =========================================================================
 
     // GET: /Admin/AcilanDersYonetimi
@@ -1759,7 +1759,7 @@ public class AdminController : Controller
             return RedirectToAction(nameof(AcilanDersYonetimi), new { donemId = geriDonDonemId, fakulteId = geriDonFakulteId, bolumId = geriDonBolumId });
         }
 
-        var ad = new AcilanDer
+        var ad = new AcilanDers
         {
             DersId = dersId,
             DonemId = donemId,
@@ -2071,7 +2071,7 @@ public class AdminController : Controller
         int seciliBolumId = bolumId ?? 0;
 
         var program = new List<DersProgrami>();
-        var acilanDersler = new List<AcilanDer>();
+        var acilanDersler = new List<AcilanDers>();
 
         if (seciliBolumId != 0)
         {
@@ -2247,7 +2247,7 @@ public class AdminController : Controller
         int seciliBolumId = bolumId ?? 0;
 
         var program = new List<SinavProgrami>();
-        var acilanDersler = new List<AcilanDer>();
+        var acilanDersler = new List<AcilanDers>();
 
         if (seciliBolumId != 0)
         {

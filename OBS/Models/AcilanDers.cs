@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace OBS.Models;
 
-public partial class AcilanDer
+public partial class AcilanDers
 {
     public int Id { get; set; }
 
@@ -19,7 +19,7 @@ public partial class AcilanDer
 
     public string? Durum { get; set; }
 
-    public virtual Der Ders { get; set; } = null!;
+    public virtual Ders Ders { get; set; } = null!;
 
     public virtual ICollection<DersKaydi> DersKaydis { get; set; } = new List<DersKaydi>();
 

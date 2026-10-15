@@ -21,7 +21,7 @@ public partial class OgretimUyesi
 
     public DateOnly? GorevBitis { get; set; }
 
-    public virtual ICollection<AcilanDer> AcilanDers { get; set; } = new List<AcilanDer>();
+    public virtual ICollection<AcilanDers> AcilanDers { get; set; } = new List<AcilanDers>();
 
     public virtual Kullanici Kullanici { get; set; } = null!;
 

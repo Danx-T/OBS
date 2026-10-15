@@ -1,9 +1,9 @@
-@model List<OBS.Models.Der>
+﻿@model List<OBS.Models.Ders>
 @{
     ViewData["Title"] = "Ders Yönetimi";
     var fakulteler = ViewBag.Fakulteler as List<OBS.Models.Organizasyon> ?? new List<OBS.Models.Organizasyon>();
     var bolumler = ViewBag.Bolumler as List<OBS.Models.Organizasyon> ?? new List<OBS.Models.Organizasyon>();
-    var tumDersler = ViewBag.TumDersler as List<OBS.Models.Der> ?? new List<OBS.Models.Der>();
+    var tumDersler = ViewBag.TumDersler as List<OBS.Models.Ders> ?? new List<OBS.Models.Ders>();
     int? seciliFakulteId = ViewBag.SeciliFakulteId as int?;
     int? seciliBolumId = ViewBag.SeciliBolumId as int?;
     string? arama = ViewBag.Arama as string;

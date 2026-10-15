@@ -21,11 +21,11 @@ public partial class ObsContext : DbContext
         _httpContextAccessor = httpContextAccessor;
     }
 
-    public virtual DbSet<AcilanDer> AcilanDers { get; set; }
+    public virtual DbSet<AcilanDers> AcilanDers { get; set; }
 
     public virtual DbSet<DenetimKaydi> DenetimKaydis { get; set; }
 
-    public virtual DbSet<Der> Ders { get; set; }
+    public virtual DbSet<Ders> Ders { get; set; }
 
     public virtual DbSet<DersKaydi> DersKaydis { get; set; }
 
@@ -59,7 +59,7 @@ public partial class ObsContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<AcilanDer>(entity =>
+        modelBuilder.Entity<AcilanDers>(entity =>
         {
             entity.HasIndex(e => new { e.DersId, e.DonemId, e.SubeNo }, "UQ_AcilanDers_Ders_Donem_Sube").IsUnique();
 
@@ -114,7 +114,7 @@ public partial class ObsContext : DbContext
                 .HasConstraintName("FK_DenetimKaydi_Kullanici");
         });
 
-        modelBuilder.Entity<Der>(entity =>
+        modelBuilder.Entity<Ders>(entity =>
         {
             entity.HasIndex(e => e.DersKodu, "UQ_Ders_DersKodu").IsUnique();
 
@@ -136,14 +136,14 @@ public partial class ObsContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Ders_Organizasyon");
 
-            entity.HasMany(d => d.Ders).WithMany(p => p.OnKosulDers)
+            entity.HasMany(d => d.OnKosulOlduguDersler).WithMany(p => p.OnKosulDers)
                 .UsingEntity<Dictionary<string, object>>(
                     "DersOnKosul",
-                    r => r.HasOne<Der>().WithMany()
+                    r => r.HasOne<Ders>().WithMany()
                         .HasForeignKey("DersId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
                         .HasConstraintName("FK_DersOnKosul_Ders"),
-                    l => l.HasOne<Der>().WithMany()
+                    l => l.HasOne<Ders>().WithMany()
                         .HasForeignKey("OnKosulDersId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
                         .HasConstraintName("FK_DersOnKosul_OnKosul"),
@@ -153,14 +153,14 @@ public partial class ObsContext : DbContext
                         j.ToTable("DersOnKosul");
                     });
 
-            entity.HasMany(d => d.OnKosulDers).WithMany(p => p.Ders)
+            entity.HasMany(d => d.OnKosulDers).WithMany(p => p.OnKosulOlduguDersler)
                 .UsingEntity<Dictionary<string, object>>(
                     "DersOnKosul",
-                    r => r.HasOne<Der>().WithMany()
+                    r => r.HasOne<Ders>().WithMany()
                         .HasForeignKey("OnKosulDersId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
                         .HasConstraintName("FK_DersOnKosul_OnKosul"),
-                    l => l.HasOne<Der>().WithMany()
+                    l => l.HasOne<Ders>().WithMany()
                         .HasForeignKey("DersId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
                         .HasConstraintName("FK_DersOnKosul_Ders"),

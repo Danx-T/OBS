@@ -17,7 +17,7 @@ public partial class DersKaydi
 
     public DateTime? OnayTarihi { get; set; }
 
-    public virtual AcilanDer AcilanDers { get; set; } = null!;
+    public virtual AcilanDers AcilanDers { get; set; } = null!;
 
     public virtual ICollection<Notlar> Notlars { get; set; } = new List<Notlar>();
 

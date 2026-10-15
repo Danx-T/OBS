@@ -19,5 +19,5 @@ public partial class Donem
 
     public DateTime DersKaydiBitis { get; set; }
 
-    public virtual ICollection<AcilanDer> AcilanDers { get; set; } = new List<AcilanDer>();
+    public virtual ICollection<AcilanDers> AcilanDers { get; set; } = new List<AcilanDers>();
 }

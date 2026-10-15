@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace OBS.Models;
 
-public partial class Der
+public partial class Ders
 {
     public int Id { get; set; }
 
@@ -25,11 +25,11 @@ public partial class Der
 
     public bool AktiflikDurumu { get; set; }
 
-    public virtual ICollection<AcilanDer> AcilanDers { get; set; } = new List<AcilanDer>();
+    public virtual ICollection<AcilanDers> AcilanDers { get; set; } = new List<AcilanDers>();
 
     public virtual Organizasyon Organizasyon { get; set; } = null!;
 
-    public virtual ICollection<Der> Ders { get; set; } = new List<Der>();
+    public virtual ICollection<Ders> OnKosulOlduguDersler { get; set; } = new List<Ders>();
 
-    public virtual ICollection<Der> OnKosulDers { get; set; } = new List<Der>();
+    public virtual ICollection<Ders> OnKosulDers { get; set; } = new List<Ders>();
 }

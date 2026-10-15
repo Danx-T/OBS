@@ -1,10 +1,10 @@
-@model List<OBS.Models.AcilanDer>
+﻿@model List<OBS.Models.AcilanDers>
 @{
     ViewData["Title"] = "Ders Açma İşlemleri";
     var donemler = ViewBag.Donemler as List<OBS.Models.Donem> ?? new List<OBS.Models.Donem>();
     var fakulteler = ViewBag.Fakulteler as List<OBS.Models.Organizasyon> ?? new List<OBS.Models.Organizasyon>();
     var bolumler = ViewBag.Bolumler as List<OBS.Models.Organizasyon> ?? new List<OBS.Models.Organizasyon>();
-    var tumDersler = ViewBag.TumDersler as List<OBS.Models.Der> ?? new List<OBS.Models.Der>();
+    var tumDersler = ViewBag.TumDersler as List<OBS.Models.Ders> ?? new List<OBS.Models.Ders>();
     var ogretimUyeleri = ViewBag.OgretimUyeleri as List<OBS.Models.OgretimUyesi> ?? new List<OBS.Models.OgretimUyesi>();
 
     int? seciliDonemId = ViewBag.SeciliDonemId as int?;

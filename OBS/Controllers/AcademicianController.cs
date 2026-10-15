@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OBS.Models;
@@ -88,7 +88,7 @@ namespace OBS.Controllers
 
             var activeSemester = await GetActiveSemesterAsync();
             
-            var courses = new List<AcilanDer>();
+            var courses = new List<AcilanDers>();
             if (activeSemester != null)
             {
                 courses = await _context.AcilanDers
@@ -343,7 +343,7 @@ namespace OBS.Controllers
             var activeSemester = await GetActiveSemesterAsync();
             
             var exams = new List<SinavProgrami>();
-            var verilenDersler = new List<AcilanDer>();
+            var verilenDersler = new List<AcilanDers>();
             if (activeSemester != null)
             {
                 // Sadece geçmiş veya şu an yapılan sınavların notu girilebilir
@@ -382,7 +382,7 @@ namespace OBS.Controllers
             if (academician == null) return RedirectToAction("Login", "Auth");
 
             SinavProgrami? sinav = null;
-            AcilanDer? ders = null;
+            AcilanDers? ders = null;
             string tur = olcmeTuru ?? "";
             int dersId = 0;
 

@@ -1,4 +1,4 @@
-using OBS.Models;
+﻿using OBS.Models;
 
 namespace OBS.ViewModels.Academician
 {
@@ -6,6 +6,6 @@ namespace OBS.ViewModels.Academician
     {
         public OgretimUyesi OgretimUyesi { get; set; } = null!;
         public Donem? AktifDonem { get; set; }
-        public List<AcilanDer> VerilenDersler { get; set; } = new List<AcilanDer>();
+        public List<AcilanDers> VerilenDersler { get; set; } = new List<AcilanDers>();
     }
 }

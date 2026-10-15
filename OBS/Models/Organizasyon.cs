@@ -17,7 +17,7 @@ public partial class Organizasyon
 
     public bool Durum { get; set; }
 
-    public virtual ICollection<Der> Ders { get; set; } = new List<Der>();
+    public virtual ICollection<Ders> Ders { get; set; } = new List<Ders>();
 
     public virtual ICollection<Organizasyon> InverseUstOrganizasyon { get; set; } = new List<Organizasyon>();
 
