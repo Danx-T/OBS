@@ -6,11 +6,11 @@
     var action = ViewContext.RouteData.Values["action"]?.ToString();
 
     <aside class="bg-dark text-white p-3 position-fixed top-0 start-0 bottom-0 d-flex flex-column" style="width: 240px; z-index: 1050;">
-        <div class="mb-4 px-2">
+        <div class="mb-3 px-2 flex-shrink-0">
             <span class="fs-5 fw-bold text-white">Yönetici Paneli</span>
         </div>
 
-        <ul class="nav nav-pills flex-column mb-auto gap-1">
+        <ul class="nav nav-pills flex-column gap-1 flex-grow-1 overflow-y-auto mb-3 pe-1 custom-sidebar-scroll" style="min-height: 0;">
             <li class="nav-item">
                 <a asp-controller="Admin" asp-action="KullaniciOlustur" class="nav-link text-white @(action == "KullaniciOlustur" ? "active bg-primary" : "")">
                     ➕ Kullanıcı Oluştur
@@ -88,7 +88,7 @@
             </li>
         </ul>
 
-        <div class="border-top border-secondary pt-3 px-2 d-flex align-items-center justify-content-between">
+        <div class="border-top border-secondary pt-3 px-2 d-flex align-items-center justify-content-between flex-shrink-0 mt-auto">
             <span class="small text-light text-truncate" style="max-width: 140px;">@User.Identity!.Name</span>
             <form asp-action="Logout" asp-controller="Auth" method="post" class="m-0">
                 @Html.AntiForgeryToken()

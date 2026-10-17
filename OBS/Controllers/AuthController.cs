@@ -506,7 +506,7 @@ public class AuthController : Controller
         var setupLink = Url.Action("SetPassword", "Auth", new { token }, Request.Scheme);
         await _passwordSetupService.SendSetupEmailAsync(kullanici.Eposta, $"{kullanici.Ad} {kullanici.Soyad}", setupLink!);
 
-        TempData["Basari"] = $"Şifre oluşturma bağlantısı {kullanici.Eposta} adresine gönderildi. Lütfen e-postanızı kontrol ediniz. (Test Linki: {setupLink})";
+        TempData["Basari"] = $"Şifre oluşturma bağlantısı {kullanici.Eposta} adresine gönderildi. Lütfen e-postanızı kontrol ediniz.";
         return RedirectToAction(nameof(Login));
     }
 }
